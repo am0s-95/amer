@@ -1,5 +1,18 @@
 # 🎬 OORIKH — 15 Production Pipelines (with success rating)
 
+## ⭐ TOP CANDIDATE (locked): Pipeline #2 — Blender → Unreal Engine 5
+Chosen as the #1 path **for a solo creator starting now**: free, learnable in weeks,
+94% success, fully dynamic (real-time flythroughs, Lumen GI, Nanite). Pair with modules
+#15 (Substance materials), #12 (photoscanned rocks/soil), #10 (Gaea terrain).
+
+**Why NOT Houdini + UE5 as #1 (despite its 10/10):** 10/10 is Houdini's *capability
+ceiling*, not its accessibility. It is the steepest tool to learn (nodes + VEX, months
+to years), costs money (Indie ~$269/yr), and is slow to first result — overkill for a
+solo start. It is #1 *for studios*. Graduate to it LATER for advanced sims (rock-flow,
+explosions). Start on Blender → UE5; you reach 94% fast, then add Houdini for the last mile.
+
+---
+
 Goal: professional + dynamic + near-100% photoreal, indistinguishable from human VFX.
 Honest note: no tool gives literal 100%; realistic photoreal ceiling ≈ 95%. The last
 5% is craft, not software. "Success %" = likelihood of reaching pro + dynamic + photoreal.
