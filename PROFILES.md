@@ -37,11 +37,19 @@
 
 `webapp-testing` · `playwright-expert` · `test-master` · `browser-qa` · `ai-regression-testing` · `click-path-audit` · `eval-harness` · `verification-loop` · `debugging-wizard` · `production-audit` · `repo-scan` · `santa-method` · `delivery-gate`
 
-## 6. devops-deploy — التشغيل والنشر (5) ⚠️ استدعاء يدوي فقط
+## 6أ. devops-knowledge — هندسة وتحليل التشغيل (4) — تلقائية
 
-النشر والتغييرات الخطرة لا تُترك للتفعيل التلقائي:
+المعرفة والتحليل والمراجعة تُستدعى تلقائيًا كأي سكيل معرفية:
 
-`devops-engineer` · `cloud-architect` · `monitoring-expert` · `deploy-to-vercel` · `vercel-optimize`
+`devops-engineer` · `cloud-architect` · `monitoring-expert` · `vercel-optimize`
+
+## 6ب. devops-execution — أوامر التنفيذ الخطرة (1) ⚠️ يدوية فقط
+
+مقفلة بـ`disable-model-invocation: true` — لا يستدعيها النموذج تلقائيًا أبدًا، فقط أنت عبر الأمر الصريح:
+
+`deploy-to-vercel` (تُستدعى بـ `/deploy-to-vercel`)
+
+**قاعدة عامة للأفعال الخطرة** (مثبتة أيضًا في CLAUDE.md): النشر الفعلي، push للإنتاج، migrations، الحذف، تعديل موارد Cloud، ولمس secrets — كلها تتطلب أمرًا صريحًا منك مهما كانت السكيل المستدعاة. المعرفة تلقائية؛ التنفيذ الخطر بيدك.
 
 ## 7. seo-content — السيو والمحتوى (10)
 
