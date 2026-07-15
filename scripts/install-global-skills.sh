@@ -47,8 +47,7 @@ done
 
 pruned=0
 if [ "$PRUNE" = "1" ]; then
-  for link in "$DEST"/*/; do
-    l="${link%/}"
+  for l in "$DEST"/*; do
     if [ -L "$l" ]; then
       tgt="$(readlink "$l")"
       case "$tgt" in
@@ -61,3 +60,17 @@ fi
 total="$(find -L "$DEST" -maxdepth 2 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')"
 echo "تم: جديد=$installed محدّث=$updated متخطى=$skipped محذوف=$pruned"
 echo "إجمالي السكيلات المتاحة عالميًا في $DEST: $total"
+
+# تركيب حارس الأفعال الخطرة عالميًا (hook + دمج آمن في settings.json)
+HOOKS_DIR="$HOME/.claude/hooks"
+mkdir -p "$HOOKS_DIR"
+cp "$REPO_DIR/.claude/scripts/hooks/guard-dangerous.js" "$HOOKS_DIR/guard-dangerous.js"
+node -e '
+const fs=require("fs"),p=process.env.HOME+"/.claude/settings.json";
+let s={};try{s=JSON.parse(fs.readFileSync(p,"utf8"))}catch{}
+s.hooks=s.hooks||{};s.hooks.PreToolUse=s.hooks.PreToolUse||[];
+const cmd="node \"$HOME/.claude/hooks/guard-dangerous.js\"";
+const has=s.hooks.PreToolUse.some(m=>(m.hooks||[]).some(h=>String(h.command||"").includes("guard-dangerous")));
+if(!has){s.hooks.PreToolUse.push({matcher:"Bash",hooks:[{type:"command",command:cmd}]});fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");console.log("حارس الأفعال الخطرة: سُجّل في ~/.claude/settings.json");}
+else console.log("حارس الأفعال الخطرة: مسجّل مسبقًا");
+'
