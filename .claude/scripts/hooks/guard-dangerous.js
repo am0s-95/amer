@@ -13,9 +13,11 @@ const PATTERNS = [
   [/\b(flyctl|fly)\s+deploy\b/, 'نشر عبر Fly.io'],
   [/\brailway\s+up\b/, 'نشر عبر Railway'],
   [/\bwrangler\s+(deploy|publish)\b/, 'نشر عبر Cloudflare'],
-  // push خطر
-  [/\bgit\s+push\b[^\n]*(--force\b|--force-with-lease|-f\b)/, 'git push قسري'],
-  [/\bgit\s+push\b[^\n]*\b(prod|production|release)\b/, 'push إلى فرع/remote إنتاجي'],
+  // push خطر (يلتقط أيضًا الصيغ المغلّفة مثل git -C /path push و bash -c '...')
+  [/\bgit\b[^\n;|&]*\bpush\b[^\n]*(--force\b|--force-with-lease|\s-f\b)/, 'git push قسري'],
+  [/\bgit\b[^\n;|&]*\bpush\b[^\n]*\b(prod|production|release)\b/, 'push إلى فرع/remote إنتاجي'],
+  [/\bnpm\s+run\s+(deploy|release|publish)\b/, 'سكربت نشر عبر npm'],
+  [/\byarn\s+(deploy|release|publish)\b/, 'سكربت نشر عبر yarn'],
   // migrations
   [/\bprisma\s+(migrate\s+(deploy|reset)|db\s+push)\b/, 'Prisma migration'],
   [/\bdrizzle-kit\s+(push|migrate)\b/, 'Drizzle migration'],
@@ -33,11 +35,26 @@ const PATTERNS = [
   [/\b(cat|less|head|tail|more|bat)\s+[^\n|;&]*\.env(\.[a-z]+)?\b/, 'قراءة ملف secrets (.env)'],
 ];
 
+function ask(reason) {
+  process.stdout.write(JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'ask',
+      permissionDecisionReason: reason,
+    },
+  }));
+  process.exit(0);
+}
+
 let raw = '';
 process.stdin.on('data', d => raw += d);
 process.stdin.on('end', () => {
   let input = {};
-  try { input = JSON.parse(raw); } catch { process.exit(0); }
+  // فشل آمن: مدخلات غير قابلة للتفسير → موافقة يدوية، لا سماح صامت
+  try { input = JSON.parse(raw); } catch {
+    ask('[Guard] تعذر تفسير مدخلات الأداة — يلزم قرار يدوي (fail-safe)');
+    return;
+  }
   if (input.tool_name !== 'Bash') process.exit(0);
   const cmd = String((input.tool_input && input.tool_input.command) || '');
   for (const [re, label] of PATTERNS) {
