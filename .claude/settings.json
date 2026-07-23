@@ -1,5 +1,8 @@
 {
   "skillListingBudgetFraction": 0.03,
+  "env": {
+    "SLASH_COMMAND_TOOL_CHAR_BUDGET": "90000"
+  },
   "hooks": {
     "PreToolUse": [
       {

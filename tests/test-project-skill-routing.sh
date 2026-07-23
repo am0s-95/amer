@@ -48,6 +48,10 @@ process.exit(0);
 n_skills="$(find "$REPO/.claude/skills" -maxdepth 2 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')"
 if [ "$n_skills" = "111" ]; then ok; else bad "عدد ملفات .claude/skills/*/SKILL.md ليس 111 (العدد: $n_skills)"; fi
 
+# --- 9. env.SLASH_COMMAND_TOOL_CHAR_BUDGET تساوي النص "90000" ---
+char_budget="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$SETTINGS','utf8')).env && JSON.parse(require('fs').readFileSync('$SETTINGS','utf8')).env.SLASH_COMMAND_TOOL_CHAR_BUDGET)" 2>/dev/null)"
+if [ "$char_budget" = "90000" ]; then ok; else bad "env.SLASH_COMMAND_TOOL_CHAR_BUDGET ليست \"90000\" (القيمة الفعلية: $char_budget)"; fi
+
 echo ""
 echo "النتيجة: نجح=$pass فشل=$fail"
 [ "$fail" -eq 0 ]
