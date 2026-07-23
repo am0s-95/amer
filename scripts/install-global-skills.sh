@@ -61,6 +61,32 @@ total="$(find -L "$DEST" -maxdepth 2 -name SKILL.md 2>/dev/null | wc -l | tr -d 
 echo "تم: جديد=$installed محدّث=$updated متخطى=$skipped محذوف=$pruned"
 echo "إجمالي السكيلات المتاحة عالميًا في $DEST: $total"
 
+# مزامنة بلوك التوجيه التلقائي المُدار في CLAUDE.md العالمي (idempotent):
+# يُستبدل محتوى ما بين علامتي BEGIN/END فقط؛ أي نص للمستخدم خارجهما لا يُمس.
+TPL="$REPO_DIR/.claude/templates/automatic-skill-routing.md"
+CMD_BEGIN='<!-- BEGIN MANAGED: automatic-skill-routing -->'
+CMD_END='<!-- END MANAGED: automatic-skill-routing -->'
+CMD_FILE="${CLAUDE_MD_DEST:-$HOME/.claude/CLAUDE.md}"
+if [ -f "$TPL" ]; then
+  mkdir -p "$(dirname "$CMD_FILE")"
+  touch "$CMD_FILE"
+  if grep -qF "$CMD_BEGIN" "$CMD_FILE"; then
+    if grep -qF "$CMD_END" "$CMD_FILE"; then
+      awk -v tpl="$TPL" -v b="$CMD_BEGIN" -v e="$CMD_END" '
+        $0 == b { inblk=1; while ((getline line < tpl) > 0) print line; close(tpl); next }
+        $0 == e { inblk=0; next }
+        !inblk { print }
+      ' "$CMD_FILE" > "$CMD_FILE.tmp" && mv "$CMD_FILE.tmp" "$CMD_FILE"
+      echo "بلوك التوجيه التلقائي: حُدّث في $CMD_FILE"
+    else
+      echo "تحذير: علامة BEGIN موجودة بلا END في $CMD_FILE — لن ألمس الملف. صحّح العلامات يدويًا."
+    fi
+  else
+    { [ -s "$CMD_FILE" ] && printf '\n'; cat "$TPL"; } >> "$CMD_FILE"
+    echo "بلوك التوجيه التلقائي: أُضيف إلى $CMD_FILE"
+  fi
+fi
+
 # تركيب حارس الأفعال الخطرة عالميًا (hook + دمج آمن في settings.json)
 HOOKS_DIR="$HOME/.claude/hooks"
 mkdir -p "$HOOKS_DIR"

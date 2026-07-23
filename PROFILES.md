@@ -1,6 +1,7 @@
 # تنظيم مكتبة السكيلات — Profiles
 
-المرجع: 106 سكيل عند `aebeee7dd6dec7dbc85d9fd0be2a8580982b3264` (طريقة العد موثقة في `bench/PROTOCOL.md`).
+المرجع التاريخي المجمّد: 106 سكيل عند `aebeee7dd6dec7dbc85d9fd0be2a8580982b3264` (طريقة العد موثقة في `bench/PROTOCOL.md`).
+الإجمالي الحالي: **111** بعد استيراد 5 سكيلات من ECC (القسم 12 أدناه؛ المصدر والـSHA في `PROVENANCE.md`).
 
 **طبيعة هذا الملف:** توثيق وتنظيم فقط. كل السكيلات تبقى مثبتة كما هي — لا حذف ولا إضافة. عند بدء مشروع حقيقي، يُنسخ إلى مشروعك ما يلزم من الطبقات (Core + طبقات الـstack المستخدمة)، وتبقى البقية هنا كمكتبة مرجعية تُجلب عند الحاجة.
 
@@ -72,6 +73,12 @@
 إدارة السكيلات والتعلم والتوثيق — نادرًا ما تلزم داخل مشروع منتج:
 
 `writing-skills` · `skill-scout` · `skill-stocktake` · `rules-distill` · `hookify-rules` · `configure-ecc` · `ecc-guide` · `ecc-recipes` · `config-gc` · `continuous-learning-v2` · `growth-log` · `agent-self-evaluation` · `agent-introspection-debugging` · `agent-sort` · `ck` · `claude-code-tools-guide` · `using-superpowers` · `code-tour` · `codebase-onboarding` · `architecture-decision-records` · `inherit-legacy-style`
+
+## 12. ecc-imported — مستوردة من ECC (5)
+
+مستوردة من `affaan-m/ECC` (التفاصيل والفحص الأمني في `PROVENANCE.md`)، وتُوجَّه تلقائيًا عبر البلوك المُدار `automatic-skill-routing` الذي يزامنه المثبّت في `~/.claude/CLAUDE.md`:
+
+`documentation-lookup` (توثيق حي عبر Context7 — مكمّلة لأي طبقة stack) · `database-migrations` (تكمّل backend-data: migrations وrollbacks وzero-downtime) · `deployment-patterns` (تكمّل devops-knowledge — معرفة فقط، التنفيذ الخطر يبقى يدويًا) · `mcp-server-patterns` (بناء خوادم MCP) · `deep-research` (بحث متعدد المصادر — تتطلب Exa/Firecrawl MCP للتشغيل الفعلي)
 
 ---
 
