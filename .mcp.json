@@ -3,6 +3,10 @@
     "claude-video-vision": {
       "command": "npx",
       "args": ["-y", "claude-video-vision@latest"]
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
     }
   }
 }
