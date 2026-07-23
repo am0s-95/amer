@@ -13,7 +13,7 @@
 المثبّت idempotent ويقوم بثلاثة أشياء:
 
 1. **السكيلات**: symlinks من `.claude/skills/*` إلى `~/.claude/skills/`.
-2. **الحارس**: ينسخ `guard-dangerous.js` إلى `~/.claude/hooks/` ويسجّله في `~/.claude/settings.json` (دمج آمن — لا يستبدل الملف).
+2. **الحُرّاس**: ينسخ `guard-dangerous.js` و`suggest-compact.js` (وتبعياته) إلى `~/.claude/hooks/`، ويسجّلهما في `~/.claude/settings.json` — `guard-dangerous` على `Bash`، و`suggest-compact` على `Edit` و`Write` (دمج آمن — لا يستبدل الملف).
 3. **التوجيه التلقائي**: يزامن البلوك المُدار `automatic-skill-routing` (من `.claude/templates/`) داخل `~/.claude/CLAUDE.md` — يحدّث ما بين العلامتين فقط ولا يمس نص المستخدم.
 
 ## الاختبارات

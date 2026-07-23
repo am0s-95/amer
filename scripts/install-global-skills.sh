@@ -87,16 +87,36 @@ if [ -f "$TPL" ]; then
   fi
 fi
 
-# تركيب حارس الأفعال الخطرة عالميًا (hook + دمج آمن في settings.json)
+# تركيب الحُرّاس عالميًا: guard-dangerous على Bash، suggest-compact على Edit وWrite
+# (نسخ + دمج آمن في settings.json — لا يستبدل الملف ولا يحذف hooks أخرى)
 HOOKS_DIR="$HOME/.claude/hooks"
+LIB_DIR="$HOME/.claude/lib"
 mkdir -p "$HOOKS_DIR"
 cp "$REPO_DIR/.claude/scripts/hooks/guard-dangerous.js" "$HOOKS_DIR/guard-dangerous.js"
+cp "$REPO_DIR/.claude/scripts/hooks/suggest-compact.js" "$HOOKS_DIR/suggest-compact.js"
+# suggest-compact.js يعتمد على ../lib/utils و../lib/transcript-context —
+# لازم تُنسخ معه وإلا فشل بـ "Cannot find module" عند كل استدعاء عالمي.
+mkdir -p "$LIB_DIR"
+cp "$REPO_DIR/.claude/scripts/lib/utils.js" "$LIB_DIR/utils.js"
+cp "$REPO_DIR/.claude/scripts/lib/transcript-context.js" "$LIB_DIR/transcript-context.js"
+cp "$REPO_DIR/.claude/scripts/lib/agent-data-home.js" "$LIB_DIR/agent-data-home.js"
 node -e '
 const fs=require("fs"),p=process.env.HOME+"/.claude/settings.json";
 let s={};try{s=JSON.parse(fs.readFileSync(p,"utf8"))}catch{}
 s.hooks=s.hooks||{};s.hooks.PreToolUse=s.hooks.PreToolUse||[];
-const cmd="node \"$HOME/.claude/hooks/guard-dangerous.js\"";
-const has=s.hooks.PreToolUse.some(m=>(m.hooks||[]).some(h=>String(h.command||"").includes("guard-dangerous")));
-if(!has){s.hooks.PreToolUse.push({matcher:"Bash",hooks:[{type:"command",command:cmd}]});fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");console.log("حارس الأفعال الخطرة: سُجّل في ~/.claude/settings.json");}
-else console.log("حارس الأفعال الخطرة: مسجّل مسبقًا");
+
+function ensureHook(matcher, scriptName, label){
+  const cmd="node \"$HOME/.claude/hooks/"+scriptName+"\"";
+  const has=s.hooks.PreToolUse.some(m=>m.matcher===matcher && (m.hooks||[]).some(h=>String(h.command||"").includes(scriptName)));
+  if(has){console.log(label+": مسجّل مسبقًا على "+matcher); return false;}
+  s.hooks.PreToolUse.push({matcher:matcher,hooks:[{type:"command",command:cmd}]});
+  console.log(label+": سُجّل على "+matcher+" في ~/.claude/settings.json");
+  return true;
+}
+
+let changed=false;
+if(ensureHook("Bash","guard-dangerous.js","حارس الأفعال الخطرة")) changed=true;
+if(ensureHook("Edit","suggest-compact.js","اقتراح /compact")) changed=true;
+if(ensureHook("Write","suggest-compact.js","اقتراح /compact")) changed=true;
+if(changed) fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");
 '
