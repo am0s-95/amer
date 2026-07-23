@@ -53,6 +53,31 @@ check "[ -L \"$DEST/relative-link\" ]" "--prune حذف رابطًا نسبيًا
 # --- 6. الروابط المُدارة السليمة تبقى بعد --prune ---
 check "[ -L \"$DEST/token-saver\" ] && [ -f \"$DEST/token-saver/SKILL.md\" ]" "رابط مُدار سليم اختفى بعد --prune"
 
+# --- 7. سكيلات ECC الخمس تُكتشف وتُركّب (SKILL.md مقروء عبر الرابط) ---
+for s in documentation-lookup database-migrations deployment-patterns mcp-server-patterns deep-research; do
+  check "[ -L \"$DEST/$s\" ] && [ -f \"$DEST/$s/SKILL.md\" ]" "سكيل ECC غير مركّبة أو رابطها مكسور: $s"
+done
+
+# --- 8. بلوك التوجيه المُدار في CLAUDE.md: موجود مرة واحدة بالضبط ---
+CMD_FILE="$TMP/.claude/CLAUDE.md"
+count_begin() { grep -cF '<!-- BEGIN MANAGED: automatic-skill-routing -->' "$CMD_FILE"; }
+check "[ -f \"$CMD_FILE\" ] && [ \"$(count_begin)\" = \"1\" ]" "البلوك المُدار غير موجود أو مكرر بعد التركيب"
+
+# --- 9. إعادة التشغيل لا تكرر البلوك ولا تمس نص المستخدم ---
+printf '\n## قاعدة مستخدم يدوية\nلا تحذفني.\n' >> "$CMD_FILE"
+"$INSTALLER" >/dev/null
+check "[ \"$(count_begin)\" = \"1\" ]" "إعادة التشغيل كررت البلوك المُدار"
+check "grep -q 'لا تحذفني' \"$CMD_FILE\"" "إعادة التشغيل مسحت نص المستخدم في CLAUDE.md"
+check "grep -qF '<!-- END MANAGED: automatic-skill-routing -->' \"$CMD_FILE\"" "علامة END اختفت بعد إعادة التشغيل"
+
+# --- 10. BEGIN بلا END: المثبّت يحذّر ولا يلمس الملف ---
+printf '%s\n' '<!-- BEGIN MANAGED: automatic-skill-routing -->' > "$CMD_FILE"
+printf 'نص المستخدم بعد علامة ناقصة\n' >> "$CMD_FILE"
+before_broken="$(cat "$CMD_FILE")"
+"$INSTALLER" >/dev/null
+after_broken="$(cat "$CMD_FILE")"
+check '[ "$before_broken" = "$after_broken" ]' "المثبّت عدّل ملفًا بعلامات ناقصة بدل التحذير"
+
 echo ""
 echo "النتيجة: نجح=$pass فشل=$fail"
 [ "$fail" -eq 0 ]
