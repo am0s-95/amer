@@ -346,3 +346,85 @@ JSON
 if [ "${PYRIGHT_LSP_SKIP_INSTALL:-0}" != "1" ]; then
   install_pyright_lsp_plugin
 fi
+
+# تركيب "Ponytail Curated" عالميًا: Marketplace محلي مخصص (skill-master-plugins، داخل هذا
+# المستودع) يعرض حصرًا الست سكيلات من Ponytail (ponytail, ponytail-review, ponytail-audit,
+# ponytail-debt, ponytail-gain, ponytail-help)، مثبّتة على tag/commit ثابت (v4.8.4 —
+# bc9ee949d5f439e8b9f3bb92c6d6d3d1e6ebd324) عبر مصدر git-subdir. لا Hooks (SessionStart/
+# SubagentStart/UserPromptSubmit)، لا statusLine، لا agents، لا MCP servers — الإصدار الكامل
+# الرسمي لـPonytail لا يُثبَّت هنا إطلاقًا. راجع .claude/marketplaces/skill-master-plugins.
+# PONYTAIL_CURATED_SKIP_INSTALL=1 لتخطي هذا الجزء بالكامل (تستخدمه اختبارات لا تحتاج شبكة/claude CLI).
+install_ponytail_curated_plugin() {
+  local marketplace_dir="$REPO_DIR/.claude/marketplaces/skill-master-plugins"
+  local marketplace_json="$marketplace_dir/.claude-plugin/marketplace.json"
+  local marketplace_name="skill-master-plugins"
+  local plugin_id="ponytail-curated@skill-master-plugins"
+
+  if [ ! -f "$marketplace_json" ]; then
+    echo "خطأ: marketplace.json غير موجود: $marketplace_json" >&2
+    return 1
+  fi
+
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "Ponytail Curated: تخطي — claude CLI غير موجود في PATH"
+    return 0
+  fi
+
+  local desired_version
+  desired_version="$(node -e "console.log(require('$marketplace_json').plugins[0].version)")"
+
+  # 1) Marketplace: أضِفه فقط إن لم يكن مسجّلًا بنفس المسار (idempotent، لا يحذف Marketplaces أخرى)
+  local mp_list mp_state
+  mp_list="$(claude plugin marketplace list --json 2>/dev/null || echo '[]')"
+  mp_state="$(node -e '
+    const list=JSON.parse(process.argv[1]||"[]");
+    const found=list.find(m=>m.name===process.argv[2]);
+    if(!found) console.log("missing");
+    else if(found.path===process.argv[3]) console.log("current");
+    else console.log("stale");
+  ' "$mp_list" "$marketplace_name" "$marketplace_dir")"
+
+  case "$mp_state" in
+    missing)
+      echo "Ponytail Curated: تسجيل Marketplace محلي ($marketplace_name) ..."
+      claude plugin marketplace add "$marketplace_dir"
+      ;;
+    stale)
+      echo "Ponytail Curated: Marketplace مسجّل بمسار مختلف — إعادة تسجيله على مسار هذا المستودع ..."
+      claude plugin marketplace remove "$marketplace_name" || true
+      claude plugin marketplace add "$marketplace_dir"
+      ;;
+    current)
+      echo "Ponytail Curated: Marketplace ($marketplace_name) مسجّل مسبقًا بنفس المصدر — تخطي"
+      ;;
+  esac
+
+  # 2) Plugin: ثبّته أو حدّثه فقط عند الحاجة (idempotent، لا يحذف Plugins أخرى)
+  local pl_list pl_state
+  pl_list="$(claude plugin list --json 2>/dev/null || echo '[]')"
+  pl_state="$(node -e '
+    const list=JSON.parse(process.argv[1]||"[]");
+    const found=list.find(p=>p.id===process.argv[2]);
+    if(!found) console.log("missing");
+    else if(found.version===process.argv[3]) console.log("current");
+    else console.log("outdated");
+  ' "$pl_list" "$plugin_id" "$desired_version")"
+
+  case "$pl_state" in
+    missing)
+      echo "Ponytail Curated: تثبيت $plugin_id (user scope) ..."
+      claude plugin install "$plugin_id" --scope user
+      ;;
+    outdated)
+      echo "Ponytail Curated: تحديث $plugin_id إلى $desired_version ..."
+      claude plugin update "$plugin_id" --scope user
+      ;;
+    current)
+      echo "Ponytail Curated: $plugin_id مثبّت مسبقًا على النسخة المعتمدة ($desired_version) — تخطي"
+      ;;
+  esac
+}
+
+if [ "${PONYTAIL_CURATED_SKIP_INSTALL:-0}" != "1" ]; then
+  install_ponytail_curated_plugin
+fi

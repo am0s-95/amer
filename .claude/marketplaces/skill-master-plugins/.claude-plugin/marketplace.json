@@ -1,0 +1,43 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "skill-master-plugins",
+  "description": "Marketplace خاص بمشروع Skill Master — يوزّع نسخًا منسّقة (curated) من مكوّنات أطراف ثالثة، معزولة عن أي Hooks أو MCP servers غير مرغوبة في المصدر الأصلي.",
+  "owner": {
+    "name": "Skill Master (amer)",
+    "url": "https://github.com/am0s-95/amer"
+  },
+  "plugins": [
+    {
+      "name": "ponytail-curated",
+      "displayName": "Ponytail (Curated Skills)",
+      "description": "الست سكيلات من Ponytail (ponytail, ponytail-review, ponytail-audit, ponytail-debt, ponytail-gain, ponytail-help) فقط — بدون Hooks (SessionStart/SubagentStart/UserPromptSubmit) وبدون statusLine أو agents أو MCP servers من المشروع الأصلي.",
+      "version": "4.8.4-skill-master.1",
+      "author": {
+        "name": "Dietrich Gebert",
+        "url": "https://github.com/DietrichGebert"
+      },
+      "homepage": "https://github.com/DietrichGebert/ponytail",
+      "repository": "https://github.com/DietrichGebert/ponytail",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": ["ponytail", "yagni", "over-engineering", "code-review"],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/DietrichGebert/ponytail.git",
+        "path": "skills",
+        "ref": "v4.8.4",
+        "sha": "bc9ee949d5f439e8b9f3bb92c6d6d3d1e6ebd324"
+      },
+      "skills": [
+        "./ponytail",
+        "./ponytail-review",
+        "./ponytail-audit",
+        "./ponytail-debt",
+        "./ponytail-gain",
+        "./ponytail-help"
+      ],
+      "strict": false,
+      "defaultEnabled": true
+    }
+  ]
+}
