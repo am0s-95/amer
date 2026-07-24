@@ -115,6 +115,7 @@ export PATH="$MOCK_CLAUDE_DIR:$PATH"
 export MOCK_CLAUDE_CALLS_FILE="$TMP/mock-claude-calls.log"
 export TS_LSP_SKIP_INSTALL=1
 export PYRIGHT_LSP_SKIP_INSTALL=1
+export SESSION_REPORT_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Session Report — انظر test-install-session-report-curated.sh
 : > "$MOCK_CLAUDE_CALLS_FILE"
 
 mkdir -p "$TMP/.claude"

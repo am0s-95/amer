@@ -117,3 +117,71 @@
 - Idempotency: تشغيل ثانٍ للمثبّت الكامل على نفس HOME المؤقت أنتج "تخطي" لكل من marketplace add والثلاثة plugin installs (بلا أي `update` أو تكرار `add`).
 - `settings.json` بعد التثبيتين: بلا `statusLine`، وحقل `hooks` يحتوي `PreToolUse` فقط (بمطابقات `Bash`, `mcp__github__.*`, `Edit`, `Write` — حراسنا الأربعة فقط)، بلا `SessionStart`/`SubagentStart`/`UserPromptSubmit`.
 - تم حذف كلا الـHOME المؤقتين المستخدمين في الاختبار بعد انتهائه؛ لم يُشغَّل المثبّت على HOME الحقيقي في أي لحظة.
+
+## Session Report Curated (2026-07-24)
+
+- **المصدر:** https://github.com/anthropics/claude-plugins-official
+- **المسار:** `plugins/session-report`
+- **Branch:** `main` (لا يوفّر المصدر tag مخصصًا لهذا الـPlugin بمفرده — نفس نمط `mcp-server-dev-curated`)
+- **Commit SHA:** `b4810bd800e10c8595d79835e61e5945c1cd81ba` (قمة `main` وقت التحقق — تم التحقق منه مباشرة عبر `git clone` كامل للمستودع الرسمي وقراءة `git rev-parse HEAD`، SHA كامل من 40 حرفًا، غير مختصر، ولا اعتماد على `main` حيًا في النسخة النهائية).
+- **تاريخ الاستيراد:** 2026-07-24.
+- **الترخيص:** Apache License 2.0 (نص الترخيص الكامل في `LICENSE` بمستودع المصدر ومنسوخ حرفيًا في `LICENSE` داخل الـPlugin المنقّح).
+- **طريقة الاستيراد:** نسخ محلي (لا `git-subdir` حي) داخل هذا المستودع نفسه، على عكس الثلاثة السابقين. السبب: المصدر الرسمي يحتاج تعديلات حقيقية في المحتوى (إصلاح مسار transcripts، إخفاء البرومبتات افتراضيًا) لا يمكن تحقيقها بمجرد جلب الملفات كما هي من `main` حيّ — `git-subdir` يجلب الملفات الأصلية غير المعدَّلة دائمًا. النسخة المنقَّحة موجودة في `.claude/marketplaces/skill-master-plugins/plugins/session-report-curated/` (داخل جذر الـMarketplace نفسه، لأن مدقّق `claude plugin validate` يرفض أي `source` محلي يحتوي `..` — المسارات المحلية يجب أن تُحل نسبةً لجذر الـMarketplace، لا لمسار `marketplace.json`)، ويشير إليها عنصر `session-report-curated` في `marketplace.json` بحقل `source` نصي مباشر (`./plugins/session-report-curated`) بدل كائن `git-subdir`.
+- **الملفات المستوردة:** `skills/session-report/SKILL.md`، `skills/session-report/analyze-sessions.mjs`، `skills/session-report/template.html`، `LICENSE` — منسوخة من المصدر الرسمي على الـSHA أعلاه ثم عُدِّلت محليًا (التفاصيل أدناه). لا ملفات `references/` مرافقة في هذا الـPlugin (المصدر الرسمي لا يتضمن أي).
+
+### المشكلتان المعروفتان في المصدر الرسمي (وسبب رفض `session-report@claude-plugins-official` غير المنقّح)
+
+تم التحقق من كليهما مباشرة على السطر `b4810bd800e10c8595d79835e61e5945c1cd81ba`:
+
+1. **غياب `.claude-plugin/plugin.json` داخل `plugins/session-report`:** المصدر يعرّف الـPlugin فقط عبر عنصر في `marketplace.json` الرسمي للمستودع (`"source": "./plugins/session-report"`, بلا `version` أصلًا) — لا يوجد ملف manifest مستقل للـPlugin نفسه. هذا يطابق ما وصفه التكليف: تثبيت الإضافة الرسمية دون `plugin.json` صريح يُعرّض لاحتمال أن يُشتق اسم/نطاق (namespace) الـPlugin من Git SHA بدل اسم ثابت مقروء، بحسب كيفية تعامل marketplace الحي مع مجلد بلا manifest مستقل.
+2. **`analyze-sessions.mjs` يثبّت المسار على `~/.claude/projects`:** السطر الأصلي `const ROOT = flag('--dir', path.join(os.homedir(), '.claude', 'projects'))` — لا يقرأ `process.env.CLAUDE_CONFIG_DIR` إطلاقًا. أي مستخدم يشغّل Claude Code بـ`CLAUDE_CONFIG_DIR` مخصص (شائع في بيئات معزولة/CI) يحصل على تقرير فارغ أو خاطئ بصمت، دون أي إشارة للسبب.
+
+كلا المشكلتين مُصلَحتان في النسخة المنقّحة (راجع التعديلات المحلية أدناه)، وتم التحقق من الإصلاح عبر اختبار وحدة (`tests/test-session-report-analyzer.sh`) واختبار تكامل حقيقي (`tests/test-install-session-report-curated.sh` + اختبار HOME مؤقت حقيقي، النتائج أدناه).
+
+### التعديلات المحلية على `analyze-sessions.mjs`
+
+- **دعم `CLAUDE_CONFIG_DIR`:** `ROOT` الافتراضي أصبح `path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'projects')`، مع بقاء `--dir` بأولوية كاملة فوق الاثنين (لم يتغيّر منطق `flag()` نفسه).
+- **حقول metadata إضافية في JSON output:** `config_dir`، `root` (كان موجودًا أصلًا)، `generated_at` (كان موجودًا أصلًا)، `requested_since` (القيمة الخام لـ`--since` كما مُرِّرت، أو `null`)، و`privacy: {prompts_included, local_only: true}`.
+- **إخفاء البرومبتات افتراضيًا (خصوصية):** `top_prompts[].text` يصبح `"[redacted]"` و`context` يصبح `null` ما لم يُمرَّر `--include-prompts` صراحة. نفس القاعدة على `cache_breaks[].context`. عند تمرير `--include-prompts` تُطبع رسالة تحذير واضحة على `stderr` توضّح أن التقرير سيحتوي نصًا حرفيًا من محادثات المستخدم.
+- **معالجة آمنة لمجلد transcripts المفقود:** فحص `fs.existsSync(ROOT)` صريح مع رسالة واضحة على `stderr` عند غيابه (السلوك الأصلي كان يتجاهل الخطأ بصمت عبر `try/catch` في `walk()` بدون أي رسالة) — بلا `stack trace`، `exit code 0`، وتقرير JSON فارغ صالح (`sessions: 0`).
+- **الوضع النصي (`printText`) يطابق نفس قواعد الإخفاء** عبر إعادة استخدام `topPrompts()` نفسها، ويطبع سطرًا إضافيًا في الرأس يوضّح `config dir` وحالة الخصوصية.
+
+### التعديل المحلي على `template.html`
+
+- حُذفت ثلاثة أسطر `<link>` كانت تجلب خط JetBrains Mono من Google Fonts (`fonts.googleapis.com`/`fonts.gstatic.com`) — طلب شبكة خارجي يخالف متطلب "self-contained HTML بلا CDN بلا network requests". حُذفت `'JetBrains Mono'` من متغيّر CSS `--mono` (يبقى fallback إلى `SF Mono`/`ui-monospace`/`Menlo`/`Monaco`/`monospace` — كلها خطوط نظام، بلا أي طلب شبكة). لا تعديل آخر على القالب — بقيت كل الجداول، الفرز، الطي، والرسوم بالحروف كما هي.
+- أُضيف سطر واحد في `foot-stats` يعرض حالة الخصوصية (`prompts redacted` أو `prompts included (--include-prompts)`) بالاعتماد على حقل `DATA.privacy` الجديد — لا يكسر شيئًا إن كان الحقل غائبًا (تحقّق شرطي).
+
+### `plugin.json` الجديد (يُصلح المشكلة #1)
+
+```json
+{
+  "name": "session-report-curated",
+  "displayName": "Session Report Curated",
+  "version": "1.0.0-skill-master.1",
+  "description": "Generate privacy-conscious HTML reports of local Claude Code session usage",
+  "author": { "name": "Anthropic / Skill Master curated" },
+  "license": "Apache-2.0"
+}
+```
+
+سكيل واحدة فقط (`session-report`)، بلا `hooks`/`agents`/`mcpServers`/`lspServers` في `plugin.json` ولا في تعريف الـPlugin داخل `marketplace.json`.
+
+### مكان إخراج التقرير (SKILL.md)
+
+خلافًا للنسخة الرسمية (تكتب `session-report-*.html` داخل الدليل الحالي — قد يكون مستودع عمل Git)، تُلزم النسخة المنقّحة بالكتابة إلى `~/.claude/reports/` حصرًا (`mkdir -m 700` للمجلد، `chmod 600` للملف)، ولا تكتب أبدًا داخل مستودع مشروع. هذا تعديل على تعليمات `SKILL.md` فقط (توجيه للوكيل الذي ينفّذ الخطوات)، وليس على `analyze-sessions.mjs` نفسه (الذي لا يكتب أي ملف — يطبع JSON على `stdout` فقط).
+
+### نتائج الاختبارات
+
+- **اختبار وحدة المحلل** (`tests/test-session-report-analyzer.sh`, fixtures صناعية فقط): 41/41 نجاح — يغطي احترام `CLAUDE_CONFIG_DIR`، أولوية `--dir`، معالجة المجلد المفقود، الفترات الزمنية الأربع، إخفاء prompts افتراضيًا، `--include-prompts`، dedup الطلبات المكرَّرة (نفس `requestId` بقطعتين، يُحتسب مرة واحدة بأعلى `output_tokens`)، عدم تسرّب نص سرّي اختباري في `stdout`/`stderr` بالوضع الافتراضي، وHTML بلا روابط CDN.
+- **اختبار تركيب معزول** (`tests/test-install-session-report-curated.sh`, claude CLI وهمي عام `tests/fixtures/mock-claude-ponytail`): يغطي صحة `marketplace.json`/`plugin.json`، سكيل واحدة فقط، صفر hooks/agents/mcpServers/lspServers، التثبيت بـ`user scope`، idempotency التشغيل الثاني (لا تكرار `add`/`install`، لا `update` عند تطابق النسخة)، عدم تثبيت `session-report@claude-plugins-official` الأصلي بالتوازي، بقاء `ponytail-curated`/`obsidian-curated`/`mcp-server-dev-curated` (مزروعة مسبقًا في حالة الـmock) مثبَّتة بلا تغيير، سلامة `settings.json` (بلا Hooks/statusLine جديدة)، عدم إنشاء `~/.claude/reports` أثناء الـbootstrap، عدد سكيلات المصدر يبقى 111، وقواعد التوجيه التلقائي الخاصة بـSession Report موجودة مرة واحدة بالضبط.
+- **اختبار تكامل حقيقي** (HOME مؤقت جديد بالكامل، Claude Code 2.1.219 الحقيقي، شبكة فعلية، fixtures صناعية فقط — لا transcripts حقيقية):
+  - التثبيت الكامل (`install-global-skills.sh` بلا أي `SKIP_INSTALL` عدا LSP) ثبّت الأربعة معًا: `ponytail-curated`، `obsidian-curated`، `mcp-server-dev-curated`، `session-report-curated`، كلها بـ`user scope`.
+  - **مشكلة حقيقية اكتُشفت وصُحِّحت أثناء الاختبار:** المحاولة الأولى تضمّنت حقل `"skills": ["./skills/session-report"]` صريحًا في عنصر `marketplace.json` **مع** وجود `.claude-plugin/plugin.json` في نفس مجلد الـPlugin — نفس تعارض "conflicting manifests" الموثَّق سابقًا لـ`mcp-server-dev-curated` (راجع القسم أعلاه). `claude plugin list --json` أعاد فعليًا: `"errors": ["Plugin session-report-curated has conflicting manifests: both plugin.json and marketplace entry specify components. Set strict: true in marketplace entry or remove component specs from one location."]`. **الإصلاح:** حذف حقل `skills` من عنصر `marketplace.json` نهائيًا — `plugin.json` المحلي + اصطلاح مجلد `skills/session-report/SKILL.md` كافيان وحدهما للاكتشاف، بلا أي تكرار لمصدر الحقيقة. بعد `claude plugin marketplace update skill-master-plugins` و`claude plugin update session-report-curated@skill-master-plugins`: صفر أخطاء.
+  - `claude plugin details session-report-curated@skill-master-plugins` (بعد الإصلاح): `Skills (1)  session-report`، `Agents (0)`، `Hooks (0)`، `MCP servers (0)`، `LSP servers (0)`.
+  - Skill discovery فعلي عبر `claude -p` (لا cache فقط): طلب "اذكر أسماء أي Skills متعلقة بتقارير الاستخدام/tokens/cache" أعاد فعليًا `session-report-curated:session-report` فقط (مع بادئة المصدر الصحيحة).
+  - تشغيل المحلل الفعلي من نسخة الـcache المثبَّتة فعليًا (لا من نسخة المستودع) على fixture صناعية تحتوي نص سرّي اختباري فريد: الوضع الافتراضي أعاد `top_prompts[0].text: "[redacted]"`, `context: null`, `privacy: {"prompts_included":false,"local_only":true}` — والسر لم يظهر في stdout/JSON. تجربة منفصلة بـ`--include-prompts` أعادت النص الحقيقي فعليًا + تحذيرًا واضحًا على `stderr`.
+  - HTML مجمَّع فعليًا (قالب الـcache المثبَّت + JSON الافتراضي المُخفى) في `~/.claude/reports/` بصلاحيات `700`/`600`: بنية `<!doctype html>`...`</html>` سليمة، `#report-data` يحمل الـJSON، بلا أي `http://`/`https://`، والسر لم يتسرّب إلى ملف HTML.
+  - لم يُكتب أي شيء داخل مستودع `amer` نفسه في أي خطوة من هذا الاختبار (تحقّق `git status --porcelain` قبل/بعد يطابق التغييرات المقصودة لهذه المهمة فقط).
+  - لا طلبات شبكة أثناء تشغيل `analyze-sessions.mjs` نفسه (يستورد `fs`/`os`/`path`/`readline` فقط — الشبكة استُخدمت فقط لتثبيت الـPlugins عبر `claude plugin install`، وهي خطوة تثبيت لا تحليل).
+  - **Idempotency:** تشغيل ثانٍ كامل للمثبّت على نفس HOME المؤقت أنتج "تخطي" لكل من marketplace add والأربعة plugin installs (بلا أي `update` أو تكرار `add`)، و`claude plugin list --json` أظهر الأربعة بلا أي حقل `errors`.
+  - تم حذف الـHOME المؤقت والـfixtures الصناعية والمستودع المستنسخ للمرجع بعد انتهاء الاختبار بالكامل؛ لم يُشغَّل المحلل على transcripts حقيقية في أي لحظة.

@@ -96,6 +96,24 @@
       ],
       "strict": false,
       "defaultEnabled": true
+    },
+    {
+      "name": "session-report-curated",
+      "displayName": "Session Report Curated",
+      "description": "نسخة Skill Master المنقّحة من session-report الرسمي من Anthropic — تولّد تقرير HTML محليًا عن استهلاك Claude Code (tokens، cache، subagents، skills، أغلى البرومبتات). تصلح غياب .claude-plugin/plugin.json في المصدر الأصلي (كان يسبب namespace مكررًا باسم Git SHA)، وتُصلح analyze-sessions.mjs ليحترم CLAUDE_CONFIG_DIR بدل تثبيت المسار على ~/.claude/projects، وتُخفي نص البرومبتات والسياق افتراضيًا (redacted) إلا بطلب صريح عبر --include-prompts. بدون Hooks أو agents أو MCP servers أو LSP servers. لا شبكة إطلاقًا — تحليل محلي بحت.",
+      "version": "1.0.0-skill-master.1",
+      "author": {
+        "name": "Anthropic / Skill Master curated",
+        "url": "https://github.com/anthropics"
+      },
+      "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/session-report",
+      "repository": "https://github.com/anthropics/claude-plugins-official",
+      "license": "Apache-2.0",
+      "category": "productivity",
+      "keywords": ["session-report", "usage", "tokens", "cache", "observability", "privacy"],
+      "source": "./plugins/session-report-curated",
+      "strict": false,
+      "defaultEnabled": true
     }
   ]
 }

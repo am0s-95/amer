@@ -85,4 +85,20 @@ Do not use defuddle; use Exa or Firecrawl for web extraction.
 
 - لا تسمح لهذه المهارات بتنفيذ deploy أو publish أو إنشاء secrets أو تغيير
   خدمة خارجية دون موافقة صريحة.
+
+### Session report routing
+
+- استخدم session-report فقط عندما يطلب المستخدم:
+  - تقرير استهلاك Claude Code
+  - تحليل tokens أو cache
+  - تحليل subagents أو skills
+  - أكثر البرومبتات تكلفة
+  - مقارنة الاستخدام بين المشاريع
+- لا تشغّله تلقائيًا في SessionStart أو Stop.
+- لا تشغّله بعد كل مهمة.
+- الوضع الافتراضي يخفي نصوص prompts.
+- لا تستخدم --include-prompts دون موافقة صريحة.
+- اشرح أن التقرير يحلل transcripts المتاحة في HOME الحالي فقط،
+  وليس كل تاريخ حساب Claude عبر الأجهزة أو البيئات.
+- لا تنشر أو ترفع التقرير تلقائيًا.
 <!-- END MANAGED: automatic-skill-routing -->
