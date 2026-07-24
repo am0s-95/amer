@@ -18,4 +18,35 @@ Use ponytail-review only after a large diff, not after every small edit.
 Use ponytail-audit only on explicit request or for a full repository audit.
 Do not run ponytail together with code-simplifier or any other duplicate simplification tool in the same pass.
 Never deploy, push, merge, publish, delete data, destroy infrastructure, or run production migrations without explicit user approval.
+
+### Obsidian routing
+
+Obsidian Skills are installed globally, but are not used automatically in plain Markdown.
+
+Use obsidian-markdown only when at least one of the following holds:
+- An .obsidian folder exists at the project root or a parent folder.
+- The user explicitly mentions Obsidian, Vault, Wikilink, Embed, or Callout.
+- The target file is known to be a Note inside an Obsidian Vault.
+- The user requests Obsidian properties/frontmatter or Obsidian-specific syntax.
+
+Use obsidian-bases only when:
+- Creating or editing a .base file.
+- Or Obsidian Bases is explicitly requested.
+
+Use json-canvas only when:
+- Creating or editing a .canvas file.
+- Or JSON Canvas is explicitly requested.
+
+Do not use Obsidian syntax inside:
+- README.md
+- CHANGELOG.md
+- API docs
+- Plain Markdown files for coding projects
+- GitHub Issues or Pull Requests
+unless the user explicitly asks for it.
+
+Do not convert plain links into [[wikilinks]] outside a Vault.
+Do not add Obsidian properties or callouts to regular project files.
+Do not use obsidian-cli in Claude Cloud.
+Do not use defuddle; use Exa or Firecrawl for web extraction.
 <!-- END MANAGED: automatic-skill-routing -->

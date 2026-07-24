@@ -37,3 +37,22 @@
 الإصدار الثابت `v4.8.4` **لا يطبّق** متغيّر البيئة `PONYTAIL_SUBAGENT_MATCHER` داخل `hooks/ponytail-subagent.js` بصورة مضمونة الأثر في هذا السياق (سلوك حقن غير قابل للتحييد بثقة كافية لكل أنواع الـSubagents هنا)، ولذلك تقرر استبعاد Hooks بالكامل بدل محاولة تحييدها بمتغيّر بيئة. هذا القرار مبني على تشخيص سابق (راجع سجل المحادثة/تقرير التشخيص) خلص إلى أن تثبيت الـPlugin الكامل سيحقن قواعد Ponytail في كل Subagent — بما فيها وكلاء القراءة/البحث/التخطيط — وهو أثر جانبي غير مرغوب في Skill Master.
 
 الحل المعتمد: استيراد الست سكيلات فقط (لا قيمة تنفيذية تلقائية لها بذاتها — تُستدعى فقط عند مطابقة الوصف/التوجيه)، عبر `strict: false` في تعريف الـPlugin بحيث تكون قائمة `skills` الصريحة هي التعريف الكامل والوحيد لمكوّنات الـPlugin، دون أي حقل `hooks`/`agents`/`mcpServers` في نفس التعريف. النتيجة مؤكَّدة عمليًا: `claude plugin details ponytail-curated@skill-master-plugins` يُظهر `Hooks (0)`, `Agents (0)`, `MCP servers (0)`, و`Skills (6)` بالأسماء الست بالضبط — ولا تُضاف أي إشارة إلى `SessionStart`/`SubagentStart`/`UserPromptSubmit` أو `statusLine` في `~/.claude/settings.json` نتيجة هذا التثبيت.
+
+## Obsidian Curated (2026-07-24)
+
+- **المصدر:** https://github.com/kepano/obsidian-skills
+- **Branch:** `main`
+- **Commit SHA:** `a1dc48e68138490d522c04cbf5822214c6eb1202` (تم التحقق منه مباشرة بعملية `git clone` للمستودع الرسمي وقراءة `git rev-parse HEAD` — SHA كامل من 40 حرفًا، غير مختصر).
+- **تاريخ الاستيراد:** 2026-07-24.
+- **الترخيص:** MIT — Copyright (c) 2026 Steph Ango (@kepano) (نص الترخيص الكامل في `LICENSE` بمستودع المصدر).
+- **طريقة الاستيراد:** نفس Marketplace المحلي المخصص (`.claude/marketplaces/skill-master-plugins`) يضيف عنصر Plugin ثانيًا (`obsidian-curated`) يشير بمصدر `git-subdir` إلى مجلد `skills/` فقط من مستودع Obsidian Skills (على الـcommit أعلاه)، مع حقل `skills` صريح يسرد ثلاث سكيلات بأسمائها بالضبط. لا استنساخ محلي، لا نسخ يدوي لملفات — الجلب عبر آلية Claude Code Plugin القياسية (git-subdir sparse clone) عند وقت التثبيت.
+- **السكيلات المستوردة (3):** `obsidian-markdown`، `obsidian-bases`، `json-canvas` — كل واحدة كملف `SKILL.md` واحد (+ ملفات `references/` المرافقة لها) بدون تعديل على محتواها.
+
+### أسباب استبعاد obsidian-cli وdefuddle
+
+مستودع kepano/obsidian-skills الرسمي يضم خمس سكيلات: `obsidian-markdown`، `obsidian-bases`، `json-canvas`، `obsidian-cli`، و`defuddle`. استُبعدت اثنتان عمدًا من `obsidian-curated`:
+
+- **`obsidian-cli`**: يتطلب تطبيق Obsidian فعليًا مفتوحًا وقيد التشغيل (يتواصل مع نسخة حيّة عبر أوامر مثل `obsidian create`/`obsidian search`) — بيئة غير متاحة افتراضيًا داخل Claude Cloud (لا واجهة رسومية، لا تطبيق Obsidian مثبّت). تثبيته هنا سينتج سكيلًا لا يعمل بنيويًا في أغلب الجلسات.
+- **`defuddle`**: يكرر وظيفيًا أدوات استخراج محتوى الويب المتاحة عالميًا فعلًا في Skill Master عبر Exa وFirecrawl (MCP servers مثبّتة ومفعّلة). إضافته تُنتج ازدواجية بلا قيمة إضافية.
+
+الثلاث سكيلات المستوردة (`obsidian-markdown`، `obsidian-bases`، `json-canvas`) هي "Open Format Skills" فقط — تصف صيغ ملفات مفتوحة (Markdown الخاص بأوبسيديان، Bases، JSON Canvas) ولا تعتمد على تطبيق أو أداة خارجية للعمل، بخلاف الاثنتين المستبعدتين. تم التحقق أيضًا من خلو المستودع بالكامل (وليس فقط السكيلات الثلاث) من أي Hooks أو Agents أو اعتماديات MCP لازمة — النتيجة مؤكَّدة عمليًا: `claude plugin details obsidian-curated@skill-master-plugins` يُظهر `Skills (3)`, `Hooks (0)`, `Agents (0)`, `MCP servers (0)`, `LSP servers (0)` — ولا تُضاف أي إشارة إلى `SessionStart`/`SubagentStart`/`UserPromptSubmit` أو `statusLine` في `~/.claude/settings.json` نتيجة هذا التثبيت. تفعيل هذه السكيلات مقيَّد بقواعد Automatic Skill Routing (راجع `.claude/templates/automatic-skill-routing.md`، قسم "Obsidian routing") بحيث لا تُستخدم صيغة أوبسيديان (Wikilinks، Callouts، Properties) تلقائيًا في Markdown العادي لمشاريع البرمجة.

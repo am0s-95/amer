@@ -88,9 +88,10 @@ check "[ -z \"$has_mcp\" ]" "تعريف الـPlugin يحتوي حقل mcpServer
 has_agents="$(jget "$MARKETPLACE_JSON" plugins $PLUGIN_IDX agents)"
 check "[ -z \"$has_agents\" ]" "تعريف الـPlugin يحتوي حقل agents غير متوقع"
 
-# مصفوفة plugins تحتوي عنصرًا واحدًا فقط (لا يوجد ponytail الأصلي الكامل مضافًا بجانبه)
-plugins_count="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$MARKETPLACE_JSON','utf8')).plugins.length)")"
-check "[ \"$plugins_count\" -eq 1 ]" "مصفوفة plugins في marketplace.json يجب أن تحتوي عنصرًا واحدًا فقط (وجد: $plugins_count)"
+# لا يوجد ponytail الأصلي الكامل (غير المنسّق) مضافًا بجانب ponytail-curated في نفس الـMarketplace
+# (المصفوفة قد تحتوي عناصر Curated أخرى مثل obsidian-curated — هذا متوقع ومقصود)
+has_original_ponytail="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$MARKETPLACE_JSON','utf8')).plugins.some(p=>p.name==='ponytail')?1:0)")"
+check "[ \"$has_original_ponytail\" = \"0\" ]" "وُجد عنصر Plugin باسم ponytail الأصلي (غير المنسّق) في marketplace.json"
 
 # ============================================================
 # التشغيل الأول: HOME مؤقت + claude وnpm وهميان (يثبّت TypeScript وPyright وPonytail Curated معًا)
@@ -101,6 +102,7 @@ export HOME="$TMP"
 export PATH="$MOCK_CLAUDE_DIR:$MOCK_NPM_DIR:$PATH"
 export MOCK_CLAUDE_CALLS_FILE="$TMP/mock-claude-calls.log"
 export MOCK_NPM_CALLS_FILE="$TMP/mock-npm-calls.log"
+export OBSIDIAN_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Obsidian — انظر test-install-obsidian-curated.sh
 : > "$MOCK_CLAUDE_CALLS_FILE"
 : > "$MOCK_NPM_CALLS_FILE"
 
