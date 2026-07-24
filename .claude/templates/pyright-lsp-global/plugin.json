@@ -1,0 +1,7 @@
+{
+  "name": "pyright-lsp-global",
+  "displayName": "Global Pyright LSP",
+  "version": "1.0.0",
+  "description": "Global Python code intelligence powered by Pyright",
+  "lspServers": "./.lsp.json"
+}

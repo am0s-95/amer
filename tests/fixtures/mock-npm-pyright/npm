@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# npm الوهمي — لاختبارات التركيب المعزولة لـ pyright-lsp. لا يلمس الشبكة إطلاقًا.
+# يقرأ ./package.json في مجلد العمل الحالي:
+#   - إن وُجد dependencies.pyright يصنع شجرة node_modules/pyright وهمية (pyright + pyright-langserver).
+#   - إن وُجد dependencies['typescript-language-server'] يصنع شجرة TypeScript LSP الوهمية
+#     (نفس منطق tests/fixtures/mock-npm/npm) — لازم لأن test-install-pyright-lsp.sh يتحقق أيضًا
+#     من أن تركيب TypeScript LSP يبقى سليمًا أثناء نفس تشغيل المثبّت (فحص 18).
+set -euo pipefail
+
+if [ -n "${MOCK_NPM_CALLS_FILE:-}" ]; then
+  echo "$*" >> "$MOCK_NPM_CALLS_FILE"
+fi
+
+[ "${1:-}" = "install" ] || exit 0
+
+pkg="$(pwd)/package.json"
+[ -f "$pkg" ] || { echo "mock-npm-pyright: لا يوجد package.json في $(pwd)" >&2; exit 1; }
+
+has_pyright="$(node -p "require('$pkg').dependencies && require('$pkg').dependencies.pyright ? '1' : ''" 2>/dev/null || echo '')"
+
+if [ -n "$has_pyright" ]; then
+  pyright_version="$(node -p "require('$pkg').dependencies['pyright']")"
+
+  mkdir -p node_modules/.bin
+  mkdir -p node_modules/pyright/dist
+
+  printf '{"name":"pyright","version":"%s","bin":{"pyright":"index.js","pyright-langserver":"langserver.index.js"}}\n' "$pyright_version" \
+    > node_modules/pyright/package.json
+
+  cat > node_modules/pyright/index.js <<'JS'
+#!/usr/bin/env node
+// mock pyright CLI fixture -- test double, not real Pyright.
+const args = process.argv.slice(2);
+const pkg = require('./package.json');
+if (args.includes('--version')) {
+  console.log('pyright ' + pkg.version);
+  process.exit(0);
+}
+process.exit(0);
+JS
+  chmod +x node_modules/pyright/index.js
+
+  cat > node_modules/pyright/langserver.index.js <<'JS'
+#!/usr/bin/env node
+// mock pyright-langserver fixture -- test double, not real Pyright.
+const args = process.argv.slice(2);
+const pkg = require('./package.json');
+if (args.includes('--version')) {
+  console.log('pyright-langserver ' + pkg.version);
+  process.exit(0);
+}
+setTimeout(() => process.exit(0), 200);
+JS
+  chmod +x node_modules/pyright/langserver.index.js
+
+  ln -sf ../pyright/index.js node_modules/.bin/pyright
+  ln -sf ../pyright/langserver.index.js node_modules/.bin/pyright-langserver
+  exit 0
+fi
+
+ls_version="$(node -p "require('$pkg').dependencies['typescript-language-server']")"
+ts_version="$(node -p "require('$pkg').dependencies['typescript']")"
+
+mkdir -p node_modules/.bin
+mkdir -p node_modules/typescript-language-server/lib
+mkdir -p node_modules/typescript/lib
+
+printf '{"name":"typescript-language-server","version":"%s"}\n' "$ls_version" \
+  > node_modules/typescript-language-server/package.json
+printf '{"name":"typescript","version":"%s"}\n' "$ts_version" \
+  > node_modules/typescript/package.json
+
+cat > node_modules/typescript/lib/tsserver.js <<'JS'
+// mock tsserver.js fixture -- test double, not real TypeScript.
+JS
+
+cat > node_modules/typescript-language-server/lib/cli.js <<'JS'
+#!/usr/bin/env node
+const args = process.argv.slice(2);
+const pkg = require('../package.json');
+if (args.includes('--version')) {
+  console.log(pkg.version);
+  process.exit(0);
+}
+setTimeout(() => process.exit(0), 200);
+JS
+chmod +x node_modules/typescript-language-server/lib/cli.js
+
+ln -sf ../typescript-language-server/lib/cli.js node_modules/.bin/typescript-language-server
