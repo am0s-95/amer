@@ -31,6 +31,7 @@ count_hook() {
 TMP="$(mktemp -d '/tmp/skills test.XXXXXX')"   # مسار فيه مسافة عمدًا
 trap 'rm -rf "$TMP"' EXIT
 export HOME="$TMP"
+export TS_LSP_SKIP_INSTALL=1   # هذا الاختبار لا يغطي LSP — انظر test-install-typescript-lsp.sh
 DEST="$TMP/.claude/skills"
 
 # --- 1. التركيب الأولي ---

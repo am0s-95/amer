@@ -120,3 +120,98 @@ if(ensureHook("Edit","suggest-compact.js","اقتراح /compact")) changed=true
 if(ensureHook("Write","suggest-compact.js","اقتراح /compact")) changed=true;
 if(changed) fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");
 '
+
+# تركيب Plugin شخصي عالمي لـ TypeScript/JavaScript LSP (skills-directory plugin، بلا SKILL.md —
+# لا يُحتسب ضمن عدّاد السكيلات). يعمل مع كل المشاريع تلقائيًا؛ TypeScript المحلي لكل مشروع
+# (داخل node_modules الخاص به) له الأولوية دائمًا، والنسخة العالمية هنا fallback فقط.
+# TS_LSP_SKIP_INSTALL=1 لتخطي هذا الجزء بالكامل (تستخدمه اختبارات لا تهتم بـLSP لتفادي npm/الشبكة).
+install_typescript_lsp_plugin() {
+  local ts_ls_version="5.3.0"
+  local ts_version="5.7.2"
+  local runtime_dir="$HOME/.local/share/typescript-lsp"
+  local plugin_dir="$DEST/typescript-lsp-global"
+  local ls_bin="$runtime_dir/node_modules/.bin/typescript-language-server"
+  local tsserver="$runtime_dir/node_modules/typescript/lib/tsserver.js"
+  local pkg_json="$runtime_dir/package.json"
+
+  mkdir -p "$runtime_dir"
+
+  local new_pkg
+  new_pkg="$(cat <<JSON
+{
+  "name": "typescript-lsp-runtime",
+  "private": true,
+  "dependencies": {
+    "typescript-language-server": "$ts_ls_version",
+    "typescript": "$ts_version"
+  }
+}
+JSON
+)"
+  local old_pkg=""
+  [ -f "$pkg_json" ] && old_pkg="$(cat "$pkg_json")"
+
+  local need_install=0
+  [ -d "$runtime_dir/node_modules" ] || need_install=1
+  [ "$old_pkg" = "$new_pkg" ] || need_install=1
+  if [ "$need_install" = "0" ]; then
+    local cur_ls cur_ts
+    cur_ls="$(node -p "require('$runtime_dir/node_modules/typescript-language-server/package.json').version" 2>/dev/null || echo '')"
+    cur_ts="$(node -p "require('$runtime_dir/node_modules/typescript/package.json').version" 2>/dev/null || echo '')"
+    { [ "$cur_ls" = "$ts_ls_version" ] && [ "$cur_ts" = "$ts_version" ]; } || need_install=1
+  fi
+
+  printf '%s\n' "$new_pkg" > "$pkg_json"
+
+  if [ "$need_install" = "1" ]; then
+    echo "Global TypeScript LSP: تثبيت typescript-language-server@$ts_ls_version وtypescript@$ts_version في $runtime_dir ..."
+    ( cd "$runtime_dir" && npm install --omit=dev --save-exact --no-audit --no-fund )
+  else
+    echo "Global TypeScript LSP: التثبيت محدّث بالفعل (typescript-language-server@$ts_ls_version, typescript@$ts_version) — تخطي npm install"
+  fi
+
+  [ -x "$ls_bin" ] || { echo "خطأ: typescript-language-server غير موجود أو غير قابل للتنفيذ: $ls_bin" >&2; return 1; }
+  [ -f "$tsserver" ] || { echo "خطأ: tsserver.js غير موجود: $tsserver" >&2; return 1; }
+
+  local actual_ls actual_ts
+  actual_ls="$(node -p "require('$runtime_dir/node_modules/typescript-language-server/package.json').version" 2>/dev/null || echo '')"
+  actual_ts="$(node -p "require('$runtime_dir/node_modules/typescript/package.json').version" 2>/dev/null || echo '')"
+  [ "$actual_ls" = "$ts_ls_version" ] || { echo "خطأ: نسخة typescript-language-server المثبتة ($actual_ls) لا تطابق المطلوبة ($ts_ls_version)" >&2; return 1; }
+  [ "$actual_ts" = "$ts_version" ] || { echo "خطأ: نسخة TypeScript المثبتة ($actual_ts) لا تطابق المطلوبة ($ts_version)" >&2; return 1; }
+
+  mkdir -p "$plugin_dir/.claude-plugin"
+  cp "$REPO_DIR/.claude/templates/typescript-lsp-global/plugin.json" "$plugin_dir/.claude-plugin/plugin.json"
+
+  cat > "$plugin_dir/.lsp.json" <<JSON
+{
+  "typescript": {
+    "command": "$ls_bin",
+    "args": ["--stdio"],
+    "extensionToLanguage": {
+      ".ts": "typescript",
+      ".tsx": "typescriptreact",
+      ".js": "javascript",
+      ".jsx": "javascriptreact",
+      ".mts": "typescript",
+      ".cts": "typescript",
+      ".mjs": "javascript",
+      ".cjs": "javascript"
+    },
+    "initializationOptions": {
+      "tsserver": {
+        "fallbackPath": "$tsserver"
+      }
+    },
+    "startupTimeout": 120000,
+    "restartOnCrash": true,
+    "maxRestarts": 3
+  }
+}
+JSON
+
+  echo "Global TypeScript LSP plugin: مُثبّت في $plugin_dir"
+}
+
+if [ "${TS_LSP_SKIP_INSTALL:-0}" != "1" ]; then
+  install_typescript_lsp_plugin
+fi

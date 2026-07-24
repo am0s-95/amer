@@ -1,0 +1,7 @@
+{
+  "name": "typescript-lsp-global",
+  "displayName": "Global TypeScript LSP",
+  "version": "1.0.0",
+  "description": "Global TypeScript and JavaScript code intelligence",
+  "lspServers": "./.lsp.json"
+}
