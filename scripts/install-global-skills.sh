@@ -215,3 +215,91 @@ JSON
 if [ "${TS_LSP_SKIP_INSTALL:-0}" != "1" ]; then
   install_typescript_lsp_plugin
 fi
+
+# تركيب Plugin شخصي عالمي لـ Python LSP عبر Pyright (skills-directory plugin، بلا SKILL.md —
+# لا يُحتسب ضمن عدّاد السكيلات). يعمل مع كل مشاريع Python تلقائيًا عبر Skill Master.
+# نسخة Pyright مثبّتة بصورة ثابتة (1.1.411) من npm الرسمي — بلا typeCheckingMode/pythonVersion/venvPath
+# عالميين؛ كل مشروع يتحكّم بفحصه عبر pyrightconfig.json أو pyproject.toml أو بيئته الافتراضية الخاصة.
+# PYRIGHT_LSP_SKIP_INSTALL=1 لتخطي هذا الجزء بالكامل (تستخدمه اختبارات لا تهتم بـLSP لتفادي npm/الشبكة).
+install_pyright_lsp_plugin() {
+  local pyright_version="1.1.411"
+  local runtime_dir="$HOME/.local/share/pyright-lsp"
+  local plugin_dir="$DEST/pyright-lsp-global"
+  local pyright_bin="$runtime_dir/node_modules/.bin/pyright"
+  local langserver_bin="$runtime_dir/node_modules/.bin/pyright-langserver"
+  local pkg_json="$runtime_dir/package.json"
+  local tmpdir="$HOME/.cache/pyright-tmp"
+
+  mkdir -p "$runtime_dir"
+  mkdir -p "$tmpdir"
+
+  local new_pkg
+  new_pkg="$(cat <<JSON
+{
+  "name": "skill-master-pyright-lsp",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pyright": "$pyright_version"
+  }
+}
+JSON
+)"
+  local old_pkg=""
+  [ -f "$pkg_json" ] && old_pkg="$(cat "$pkg_json")"
+
+  local need_install=0
+  [ -d "$runtime_dir/node_modules" ] || need_install=1
+  [ "$old_pkg" = "$new_pkg" ] || need_install=1
+  [ -x "$pyright_bin" ] || need_install=1
+  [ -x "$langserver_bin" ] || need_install=1
+  if [ "$need_install" = "0" ]; then
+    local cur_version
+    cur_version="$(node -p "require('$runtime_dir/node_modules/pyright/package.json').version" 2>/dev/null || echo '')"
+    [ "$cur_version" = "$pyright_version" ] || need_install=1
+  fi
+
+  printf '%s\n' "$new_pkg" > "$pkg_json"
+
+  if [ "$need_install" = "1" ]; then
+    echo "Global Pyright LSP: تثبيت pyright@$pyright_version في $runtime_dir ..."
+    ( cd "$runtime_dir" && npm install --omit=dev --save-exact --no-audit --no-fund )
+  else
+    echo "Global Pyright LSP: التثبيت محدّث بالفعل (pyright@$pyright_version) — تخطي npm install"
+  fi
+
+  [ -x "$pyright_bin" ] || { echo "خطأ: pyright غير موجود أو غير قابل للتنفيذ: $pyright_bin" >&2; return 1; }
+  [ -x "$langserver_bin" ] || { echo "خطأ: pyright-langserver غير موجود أو غير قابل للتنفيذ: $langserver_bin" >&2; return 1; }
+
+  local actual_version
+  actual_version="$(node -p "require('$runtime_dir/node_modules/pyright/package.json').version" 2>/dev/null || echo '')"
+  [ "$actual_version" = "$pyright_version" ] || { echo "خطأ: نسخة pyright المثبتة ($actual_version) لا تطابق المطلوبة ($pyright_version)" >&2; return 1; }
+
+  mkdir -p "$plugin_dir/.claude-plugin"
+  cp "$REPO_DIR/.claude/templates/pyright-lsp-global/plugin.json" "$plugin_dir/.claude-plugin/plugin.json"
+
+  cat > "$plugin_dir/.lsp.json" <<JSON
+{
+  "pyright": {
+    "command": "$langserver_bin",
+    "args": ["--stdio"],
+    "extensionToLanguage": {
+      ".py": "python",
+      ".pyi": "python"
+    },
+    "env": {
+      "PYRIGHT_TMPDIR": "$tmpdir"
+    },
+    "startupTimeout": 120000,
+    "restartOnCrash": true,
+    "maxRestarts": 3
+  }
+}
+JSON
+
+  echo "Global Pyright LSP plugin: مُثبّت في $plugin_dir"
+}
+
+if [ "${PYRIGHT_LSP_SKIP_INSTALL:-0}" != "1" ]; then
+  install_pyright_lsp_plugin
+fi
