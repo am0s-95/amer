@@ -87,12 +87,14 @@ if [ -f "$TPL" ]; then
   fi
 fi
 
-# تركيب الحُرّاس عالميًا: guard-dangerous على Bash، suggest-compact على Edit وWrite
+# تركيب الحُرّاس عالميًا: guard-dangerous على Bash، guard-github-mcp على mcp__github__.*،
+# suggest-compact على Edit وWrite
 # (نسخ + دمج آمن في settings.json — لا يستبدل الملف ولا يحذف hooks أخرى)
 HOOKS_DIR="$HOME/.claude/hooks"
 LIB_DIR="$HOME/.claude/lib"
 mkdir -p "$HOOKS_DIR"
 cp "$REPO_DIR/.claude/scripts/hooks/guard-dangerous.js" "$HOOKS_DIR/guard-dangerous.js"
+cp "$REPO_DIR/.claude/scripts/hooks/guard-github-mcp.js" "$HOOKS_DIR/guard-github-mcp.js"
 cp "$REPO_DIR/.claude/scripts/hooks/suggest-compact.js" "$HOOKS_DIR/suggest-compact.js"
 # suggest-compact.js يعتمد على ../lib/utils و../lib/transcript-context —
 # لازم تُنسخ معه وإلا فشل بـ "Cannot find module" عند كل استدعاء عالمي.
@@ -116,8 +118,48 @@ function ensureHook(matcher, scriptName, label){
 
 let changed=false;
 if(ensureHook("Bash","guard-dangerous.js","حارس الأفعال الخطرة")) changed=true;
+if(ensureHook("mcp__github__.*","guard-github-mcp.js","حارس GitHub MCP")) changed=true;
 if(ensureHook("Edit","suggest-compact.js","اقتراح /compact")) changed=true;
 if(ensureHook("Write","suggest-compact.js","اقتراح /compact")) changed=true;
+
+// دفاع إضافي: قواعد ask صريحة لأدوات GitHub MCP التي تكتب/تغيّر حالة خارجية —
+// دمج آمن داخل permissions.ask (لا استبدال، لا حذف لقواعد allow/deny/ask الموجودة).
+const GITHUB_MUTATING_TOOLS=[
+  "mcp__github__create_branch",
+  "mcp__github__create_or_update_file",
+  "mcp__github__create_pull_request",
+  "mcp__github__create_repository",
+  "mcp__github__delete_file",
+  "mcp__github__push_files",
+  "mcp__github__merge_pull_request",
+  "mcp__github__disable_pr_auto_merge",
+  "mcp__github__enable_pr_auto_merge",
+  "mcp__github__update_pull_request",
+  "mcp__github__update_pull_request_branch",
+  "mcp__github__add_issue_comment",
+  "mcp__github__issue_write",
+  "mcp__github__sub_issue_write",
+  "mcp__github__add_comment_to_pending_review",
+  "mcp__github__add_reply_to_pull_request_comment",
+  "mcp__github__pull_request_review_write",
+  "mcp__github__resolve_review_thread",
+  "mcp__github__unresolve_review_thread",
+  "mcp__github__request_copilot_review",
+  "mcp__github__run_secret_scanning",
+  "mcp__github__fork_repository",
+  "mcp__github__actions_run_trigger",
+  "mcp__github__subscribe_pr_activity",
+  "mcp__github__unsubscribe_pr_activity",
+];
+s.permissions=s.permissions||{};
+s.permissions.ask=s.permissions.ask||[];
+for(const tool of GITHUB_MUTATING_TOOLS){
+  if(!s.permissions.ask.includes(tool)){
+    s.permissions.ask.push(tool);
+    changed=true;
+  }
+}
+
 if(changed) fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");
 '
 
