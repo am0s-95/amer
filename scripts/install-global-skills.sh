@@ -515,3 +515,90 @@ install_obsidian_curated_plugin() {
 if [ "${OBSIDIAN_CURATED_SKIP_INSTALL:-0}" != "1" ]; then
   install_obsidian_curated_plugin
 fi
+
+# تركيب "MCP Server Dev Curated" عالميًا: نفس Marketplace المحلي (skill-master-plugins) يعرض
+# حصرًا ثلاث سكيلات رسمية من anthropics/claude-plugins-official (build-mcp-server،
+# build-mcp-app، build-mcpb)، مثبّتة على commit ثابت (main —
+# 66799ffb4611b7e0c3af391c7569823a4d6b4246) عبر مصدر git-subdir. لا Hooks، لا statusLine،
+# لا agents، لا MCP servers، لا LSP servers — والإصدار الرسمي غير المنقّح
+# (mcp-server-dev@claude-plugins-official) لا يُثبَّت هنا إطلاقًا ولا عبر أي مسار آخر في هذا
+# السكربت. راجع .claude/marketplaces/skill-master-plugins.
+# MCP_SERVER_DEV_CURATED_SKIP_INSTALL=1 لتخطي هذا الجزء بالكامل (تستخدمه اختبارات لا تحتاج شبكة/claude CLI).
+install_mcp_server_dev_curated_plugin() {
+  local marketplace_dir="$REPO_DIR/.claude/marketplaces/skill-master-plugins"
+  local marketplace_json="$marketplace_dir/.claude-plugin/marketplace.json"
+  local marketplace_name="skill-master-plugins"
+  local plugin_id="mcp-server-dev-curated@skill-master-plugins"
+
+  if [ ! -f "$marketplace_json" ]; then
+    echo "خطأ: marketplace.json غير موجود: $marketplace_json" >&2
+    return 1
+  fi
+
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "MCP Server Dev Curated: تخطي — claude CLI غير موجود في PATH"
+    return 0
+  fi
+
+  local desired_version
+  desired_version="$(node -e "
+    const mp = require('$marketplace_json');
+    const p = mp.plugins.find(p => p.name === 'mcp-server-dev-curated');
+    console.log(p.version);
+  ")"
+
+  # 1) Marketplace: أضِفه فقط إن لم يكن مسجّلًا بنفس المسار (idempotent، لا يحذف Marketplaces أخرى)
+  local mp_list mp_state
+  mp_list="$(claude plugin marketplace list --json 2>/dev/null || echo '[]')"
+  mp_state="$(node -e '
+    const list=JSON.parse(process.argv[1]||"[]");
+    const found=list.find(m=>m.name===process.argv[2]);
+    if(!found) console.log("missing");
+    else if(found.path===process.argv[3]) console.log("current");
+    else console.log("stale");
+  ' "$mp_list" "$marketplace_name" "$marketplace_dir")"
+
+  case "$mp_state" in
+    missing)
+      echo "MCP Server Dev Curated: تسجيل Marketplace محلي ($marketplace_name) ..."
+      claude plugin marketplace add "$marketplace_dir"
+      ;;
+    stale)
+      echo "MCP Server Dev Curated: Marketplace مسجّل بمسار مختلف — إعادة تسجيله على مسار هذا المستودع ..."
+      claude plugin marketplace remove "$marketplace_name" || true
+      claude plugin marketplace add "$marketplace_dir"
+      ;;
+    current)
+      echo "MCP Server Dev Curated: Marketplace ($marketplace_name) مسجّل مسبقًا بنفس المصدر — تخطي"
+      ;;
+  esac
+
+  # 2) Plugin: ثبّته أو حدّثه فقط عند الحاجة (idempotent، لا يحذف Plugins أخرى)
+  local pl_list pl_state
+  pl_list="$(claude plugin list --json 2>/dev/null || echo '[]')"
+  pl_state="$(node -e '
+    const list=JSON.parse(process.argv[1]||"[]");
+    const found=list.find(p=>p.id===process.argv[2]);
+    if(!found) console.log("missing");
+    else if(found.version===process.argv[3]) console.log("current");
+    else console.log("outdated");
+  ' "$pl_list" "$plugin_id" "$desired_version")"
+
+  case "$pl_state" in
+    missing)
+      echo "MCP Server Dev Curated: تثبيت $plugin_id (user scope) ..."
+      claude plugin install "$plugin_id" --scope user
+      ;;
+    outdated)
+      echo "MCP Server Dev Curated: تحديث $plugin_id إلى $desired_version ..."
+      claude plugin update "$plugin_id" --scope user
+      ;;
+    current)
+      echo "MCP Server Dev Curated: $plugin_id مثبّت مسبقًا على النسخة المعتمدة ($desired_version) — تخطي"
+      ;;
+  esac
+}
+
+if [ "${MCP_SERVER_DEV_CURATED_SKIP_INSTALL:-0}" != "1" ]; then
+  install_mcp_server_dev_curated_plugin
+fi

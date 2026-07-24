@@ -103,6 +103,7 @@ export PATH="$MOCK_CLAUDE_DIR:$MOCK_NPM_DIR:$PATH"
 export MOCK_CLAUDE_CALLS_FILE="$TMP/mock-claude-calls.log"
 export MOCK_NPM_CALLS_FILE="$TMP/mock-npm-calls.log"
 export OBSIDIAN_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Obsidian — انظر test-install-obsidian-curated.sh
+export MCP_SERVER_DEV_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي MCP Server Dev — انظر test-install-mcp-server-dev-curated.sh
 : > "$MOCK_CLAUDE_CALLS_FILE"
 : > "$MOCK_NPM_CALLS_FILE"
 
