@@ -146,6 +146,7 @@ trap 'rm -rf "$TMP" "$STDOUT_FILE" "$STDERR_FILE"' EXIT
 export HOME="$TMP"
 export PATH="$MOCK_NPM_DIR:$PATH"
 export MOCK_NPM_CALLS_FILE="$TMP/mock-npm-calls.log"
+export PONYTAIL_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Ponytail — انظر test-install-ponytail-curated.sh
 : > "$MOCK_NPM_CALLS_FILE"
 
 mkdir -p "$TMP/.claude"

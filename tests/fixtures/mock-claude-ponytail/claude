@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# claude الوهمي — لاختبارات تركيب Ponytail Curated المعزولة (بلا شبكة، بلا claude CLI حقيقي).
+# يحاكي فقط الأوامر التي يستخدمها install_ponytail_curated_plugin:
+#   plugin marketplace add/remove/list --json
+#   plugin install/update/list --json
+# الحالة تُحفظ في MOCK_CLAUDE_STATE (JSON بسيط)، واستدعاءاته تُسجَّل في MOCK_CLAUDE_CALLS_FILE
+# إن كان معرَّفًا (لفحص الـidempotency: عدد مرات add/install عبر تشغيلات متعددة).
+set -euo pipefail
+
+STATE="${MOCK_CLAUDE_STATE:-$HOME/.mock-claude-state.json}"
+if [ -n "${MOCK_CLAUDE_CALLS_FILE:-}" ]; then
+  echo "$*" >> "$MOCK_CLAUDE_CALLS_FILE"
+fi
+
+[ -f "$STATE" ] || echo '{"marketplaces":[],"plugins":[]}' > "$STATE"
+
+node -e '
+const fs = require("fs");
+const statePath = process.argv[1];
+const args = process.argv.slice(2);
+let state = JSON.parse(fs.readFileSync(statePath, "utf8"));
+function save() { fs.writeFileSync(statePath, JSON.stringify(state)); }
+
+if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "add") {
+  const dirPath = args[3];
+  const mpJsonPath = dirPath + "/.claude-plugin/marketplace.json";
+  const mp = JSON.parse(fs.readFileSync(mpJsonPath, "utf8"));
+  state.marketplaces = state.marketplaces.filter(m => m.name !== mp.name);
+  state.marketplaces.push({ name: mp.name, source: "directory", path: dirPath, installLocation: dirPath, _marketplaceJsonPath: mpJsonPath });
+  save();
+  console.log("Successfully added marketplace: " + mp.name);
+  process.exit(0);
+}
+
+if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "remove") {
+  const name = args[3];
+  state.marketplaces = state.marketplaces.filter(m => m.name !== name);
+  save();
+  console.log("Removed marketplace: " + name);
+  process.exit(0);
+}
+
+if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "list" && args.includes("--json")) {
+  console.log(JSON.stringify(state.marketplaces.map(({_marketplaceJsonPath, ...rest}) => rest)));
+  process.exit(0);
+}
+
+if (args[0] === "plugin" && args[1] === "list" && args.includes("--json")) {
+  console.log(JSON.stringify(state.plugins));
+  process.exit(0);
+}
+
+if (args[0] === "plugin" && (args[1] === "install" || args[1] === "update")) {
+  const idArg = args[2];
+  const at = idArg.indexOf("@");
+  const pluginName = idArg.slice(0, at);
+  const marketplaceName = idArg.slice(at + 1);
+  const mp = state.marketplaces.find(m => m.name === marketplaceName);
+  if (!mp) { console.error("mock-claude: marketplace not found: " + marketplaceName); process.exit(1); }
+  const mpData = JSON.parse(fs.readFileSync(mp._marketplaceJsonPath, "utf8"));
+  const pluginEntry = (mpData.plugins || []).find(p => p.name === pluginName);
+  if (!pluginEntry) { console.error("mock-claude: plugin not found: " + pluginName); process.exit(1); }
+  const id = pluginName + "@" + marketplaceName;
+  state.plugins = state.plugins.filter(p => p.id !== id);
+  state.plugins.push({ id, version: pluginEntry.version, scope: "user", enabled: true, installPath: "/mock/plugins/" + id });
+  save();
+  console.log((args[1] === "install" ? "Successfully installed plugin: " : "Successfully updated plugin: ") + id);
+  process.exit(0);
+}
+
+console.error("mock-claude: unhandled args: " + args.join(" "));
+process.exit(1);
+' "$STATE" "$@"
