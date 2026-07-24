@@ -24,6 +24,7 @@ export PATH="$MOCK_NPM_DIR:$PATH"
 export MOCK_NPM_CALLS_FILE="$TMP/mock-npm-calls.log"
 export PYRIGHT_LSP_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Pyright — انظر test-install-pyright-lsp.sh
 export PONYTAIL_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Ponytail — انظر test-install-ponytail-curated.sh
+export OBSIDIAN_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Obsidian — انظر test-install-obsidian-curated.sh
 : > "$MOCK_NPM_CALLS_FILE"
 
 # --- بيانات مسبقة في settings.json لضمان بقاء الإعدادات وHooks السابقة (فحص 15) ---

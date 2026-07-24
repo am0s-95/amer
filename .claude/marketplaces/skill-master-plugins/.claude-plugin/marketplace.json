@@ -38,6 +38,35 @@
       ],
       "strict": false,
       "defaultEnabled": true
+    },
+    {
+      "name": "obsidian-curated",
+      "displayName": "Obsidian (Curated Skills)",
+      "description": "ثلاث سكيلات مفتوحة الصيغة فقط من Obsidian Skills (obsidian-markdown، obsidian-bases، json-canvas) — بدون obsidian-cli (يحتاج تطبيق Obsidian فعليًا مفتوحًا وغير متاح في Claude Cloud) وبدون defuddle (مكرر وظيفيًا مع Exa وFirecrawl العالميين)، وبلا Hooks أو agents أو MCP servers من المصدر الأصلي.",
+      "version": "1.0.0-skill-master.1",
+      "author": {
+        "name": "Steph Ango",
+        "url": "https://stephango.com/"
+      },
+      "homepage": "https://github.com/kepano/obsidian-skills",
+      "repository": "https://github.com/kepano/obsidian-skills",
+      "license": "MIT",
+      "category": "knowledge-management",
+      "keywords": ["obsidian", "markdown", "bases", "canvas", "pkm", "notes"],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/kepano/obsidian-skills.git",
+        "path": "skills",
+        "ref": "main",
+        "sha": "a1dc48e68138490d522c04cbf5822214c6eb1202"
+      },
+      "skills": [
+        "./obsidian-markdown",
+        "./obsidian-bases",
+        "./json-canvas"
+      ],
+      "strict": false,
+      "defaultEnabled": true
     }
   ]
 }

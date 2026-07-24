@@ -34,6 +34,7 @@ export HOME="$TMP"
 export TS_LSP_SKIP_INSTALL=1   # هذا الاختبار لا يغطي LSP — انظر test-install-typescript-lsp.sh
 export PYRIGHT_LSP_SKIP_INSTALL=1   # هذا الاختبار لا يغطي LSP — انظر test-install-pyright-lsp.sh
 export PONYTAIL_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Ponytail — انظر test-install-ponytail-curated.sh
+export OBSIDIAN_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Obsidian — انظر test-install-obsidian-curated.sh
 DEST="$TMP/.claude/skills"
 
 # --- 1. التركيب الأولي ---
