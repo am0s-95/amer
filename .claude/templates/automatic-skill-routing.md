@@ -49,4 +49,40 @@ Do not convert plain links into [[wikilinks]] outside a Vault.
 Do not add Obsidian properties or callouts to regular project files.
 Do not use obsidian-cli in Claude Cloud.
 Do not use defuddle; use Exa or Firecrawl for web extraction.
+
+### MCP development routing
+
+- استخدم build-mcp-server تلقائيًا عندما يطلب المستخدم:
+  - بناء MCP server
+  - تحويل API أو خدمة إلى MCP
+  - تصميم أدوات MCP
+  - اختيار remote HTTP أو local stdio أو MCPB
+  - بناء تكامل جديد عبر Model Context Protocol
+
+- build-mcp-server هو نقطة الدخول الأساسية.
+
+- استخدم build-mcp-app فقط عندما يحتاج MCP:
+  - واجهات تفاعلية داخل المحادثة
+  - widgets
+  - forms
+  - pickers
+  - visual previews
+  - rich interactive UI
+
+- استخدم build-mcpb فقط عندما يجب أن يعمل الخادم على جهاز المستخدم أو يصل
+  إلى ملفات محلية أو تطبيق سطح مكتب أو APIs نظام التشغيل.
+
+- استخدم mcp-server-patterns كمرجع معماري داعم، وليس Workflow كاملًا موازيًا.
+- لا تشغّل build-mcp-server وmcp-server-patterns كمسارين كاملين مكررين.
+- لا تستخدم مهارات البناء لمجرد استخدام MCP موجود أو استدعاء أداة MCP.
+- لا تبدأ scaffolding قبل تحديد:
+  - ما الذي يتصل به MCP
+  - من سيستخدمه
+  - عدد الإجراءات
+  - نموذج النشر
+  - المصادقة
+  - الحاجة إلى واجهة تفاعلية
+
+- لا تسمح لهذه المهارات بتنفيذ deploy أو publish أو إنشاء secrets أو تغيير
+  خدمة خارجية دون موافقة صريحة.
 <!-- END MANAGED: automatic-skill-routing -->

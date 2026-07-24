@@ -56,3 +56,64 @@
 - **`defuddle`**: يكرر وظيفيًا أدوات استخراج محتوى الويب المتاحة عالميًا فعلًا في Skill Master عبر Exa وFirecrawl (MCP servers مثبّتة ومفعّلة). إضافته تُنتج ازدواجية بلا قيمة إضافية.
 
 الثلاث سكيلات المستوردة (`obsidian-markdown`، `obsidian-bases`، `json-canvas`) هي "Open Format Skills" فقط — تصف صيغ ملفات مفتوحة (Markdown الخاص بأوبسيديان، Bases، JSON Canvas) ولا تعتمد على تطبيق أو أداة خارجية للعمل، بخلاف الاثنتين المستبعدتين. تم التحقق أيضًا من خلو المستودع بالكامل (وليس فقط السكيلات الثلاث) من أي Hooks أو Agents أو اعتماديات MCP لازمة — النتيجة مؤكَّدة عمليًا: `claude plugin details obsidian-curated@skill-master-plugins` يُظهر `Skills (3)`, `Hooks (0)`, `Agents (0)`, `MCP servers (0)`, `LSP servers (0)` — ولا تُضاف أي إشارة إلى `SessionStart`/`SubagentStart`/`UserPromptSubmit` أو `statusLine` في `~/.claude/settings.json` نتيجة هذا التثبيت. تفعيل هذه السكيلات مقيَّد بقواعد Automatic Skill Routing (راجع `.claude/templates/automatic-skill-routing.md`، قسم "Obsidian routing") بحيث لا تُستخدم صيغة أوبسيديان (Wikilinks، Callouts، Properties) تلقائيًا في Markdown العادي لمشاريع البرمجة.
+
+## MCP Server Dev Curated (2026-07-24)
+
+- **المصدر:** https://github.com/anthropics/claude-plugins-official
+- **المسار:** `plugins/mcp-server-dev`
+- **Branch:** `main` (لا يوفّر المصدر tag مخصصًا لهذا الـPlugin بمفرده — المستودع monorepo يضم عشرات الـPlugins بدون إصدارات Git منفصلة لكل واحد)
+- **Commit SHA:** `66799ffb4611b7e0c3af391c7569823a4d6b4246` (قمة `main` وقت التحقق — تم التحقق منه مباشرة عبر `github.com/anthropics/claude-plugins-official/commits/main.atom`، SHA كامل من 40 حرفًا، غير مختصر).
+- **تاريخ الاستيراد:** 2026-07-24.
+- **الترخيص:** Apache License 2.0 (نص الترخيص الكامل في `LICENSE` بمستودع المصدر).
+- **طريقة الاستيراد:** نفس Marketplace المحلي المخصص (`.claude/marketplaces/skill-master-plugins`) يضيف عنصر Plugin ثالثًا (`mcp-server-dev-curated`) يشير بمصدر `git-subdir` إلى مجلد `plugins/mcp-server-dev` كاملًا (على الـcommit أعلاه)، مع حقل `skills` صريح يسرد ثلاث سكيلات بأسمائها بالضبط. لا استنساخ محلي، لا نسخ يدوي لملفات — الجلب عبر آلية Claude Code Plugin القياسية (git-subdir sparse clone) عند وقت التثبيت.
+- **السكيلات المستوردة (3):** `build-mcp-server`، `build-mcp-app`، `build-mcpb` — كل واحدة كملف `SKILL.md` واحد (`name`, `description`, `version: 0.1.0` في الـfrontmatter) + ملفات `references/` المرافقة لها، بدون تعديل على محتواها.
+
+### فحص بنية المصدر قبل الاستيراد
+
+تم التحقق (قراءة فقط، عبر `raw.githubusercontent.com` و`github.com` على الـSHA أعلاه) أن مجلد `plugins/mcp-server-dev` بالكامل يحتوي فقط: `.claude-plugin/plugin.json`، `skills/`، `LICENSE`، `README.md` — بلا `hooks.json`، بلا `agents/`، بلا `.mcp.json`/`mcpServers`، بلا `lspServers`، وبلا أي سكربت تنفيذي. ملف `plugin.json` نفسه يحتوي فقط `name`/`description`/`author`، وعنصر `mcp-server-dev` داخل `marketplace.json` الرسمي للمستودع يحتوي فقط `name`/`description`/`author`/`source`/`category`/`homepage` — بلا أي حقل تنفيذي إضافي.
+
+ملفات `references/` لكل سكيل (موثّقة هنا لضمان عدم فقدانها عند التثبيت الفعلي):
+
+| السكيل | ملفات references/ |
+|---|---|
+| `build-mcp-server` (8) | `auth.md`, `deploy-cloudflare-workers.md`, `elicitation.md`, `remote-http-scaffold.md`, `resources-and-prompts.md`, `server-capabilities.md`, `tool-design.md`, `versions.md` |
+| `build-mcp-app` (6) | `abuse-protection.md`, `apps-sdk-messages.md`, `directory-checklist.md`, `iframe-sandbox.md`, `payload-budgeting.md`, `widget-templates.md` |
+| `build-mcpb` (2) | `local-security.md`, `manifest-schema.md` |
+
+### سبب اعتماد نسخة Curated مثبّتة بدل متابعة Marketplace الحي
+
+الإضافة الرسمية غير المنقّحة (`mcp-server-dev@claude-plugins-official`) تتطلب تسجيل marketplace رسمي حيّ يتابع `main` مباشرة — أي تحديثات مستقبلية غير مُراجَعة تصل تلقائيًا. كما أن سابقة معروفة من إصدارات أقدم لـClaude Code تُظهر خللًا في اكتشاف السكيلات (Skill discovery) لبعض الإضافات المُثبَّتة من marketplaces حيّة. لتفادي الأمرين معًا: (1) تثبيت المصدر على SHA كامل ثابت (`66799ffb4611b7e0c3af391c7569823a4d6b4246`) بدل متابعة `main` حيًا، و(2) إثبات اكتشاف فعلي للسكيلات الثلاث على نسخة Claude Code الحالية (2.1.218) قبل الدمج، بدل الافتراض أن وجود الملفات على القرص يعني اكتشافها. النتيجة مؤكَّدة عمليًا عبر اختبار تكامل حقيقي (HOME مؤقت، شبكة فعلية، Claude CLI حقيقي — راجع نتائج `claude plugin details mcp-server-dev-curated@skill-master-plugins` أدناه).
+
+### مشكلة Skill discovery حقيقية مُكتشَفة ومُصحَّحة أثناء الاختبار التكاملي
+
+المحاولة الأولى استخدمت `path: "plugins/mcp-server-dev"` (المجلد الكامل، بما فيه `.claude-plugin/plugin.json` الأصلي) مع حقل `skills` صريح في `marketplace.json`. النتيجة الفعلية عبر `claude plugin list --json` (HOME مؤقت، Claude Code 2.1.218، شبكة فعلية):
+
+```json
+"errors": ["Plugin mcp-server-dev-curated has conflicting manifests: both plugin.json and marketplace entry specify components. Set strict: true in marketplace entry or remove component specs from one location."]
+```
+
+ونتيجة `claude plugin details mcp-server-dev-curated@skill-master-plugins`: **`Plugin ... not found`** — رغم أن الملفات الثلاث كاملة موجودة فعليًا على القرص في cache الـPlugin (`skills/build-mcp-server`، `build-mcp-app`، `build-mcpb` كلها موجودة بمحتواها الكامل). هذه بالضبط حالة "الملفات موجودة لكن الاكتشاف فشل" التي حذّر منها هذا التكليف.
+
+**السبب:** تضمين `.claude-plugin/plugin.json` الأصلي (من المصدر) في نطاق الـgit-subdir، مع تكرار تعريف السكيلات مرة أخرى صراحة في `marketplace.json` — تعارض بين مصدرين للحقيقة. `ponytail-curated` و`obsidian-curated` لا يعانيان من هذه المشكلة لأن `path` فيهما يشير مباشرة إلى مجلد `skills/` نفسه (متجاوزًا أي `.claude-plugin/plugin.json` متداخل).
+
+**الإصلاح المعتمد:** تغيير `path` إلى `plugins/mcp-server-dev/skills` (مطابقًا لنفس نمط Ponytail/Obsidian المُثبَت)، وتحديث حقل `skills` إلى `./build-mcp-server`، `./build-mcp-app`، `./build-mcpb` (بدون بادئة `skills/`، لأن جذر المصدر أصبح مجلد `skills/` نفسه). أُعيد الاختبار كاملًا من الصفر (HOME مؤقت جديد) بعد هذا التصحيح.
+
+**نتائج اختبار Skill discovery الحقيقي (بعد الإصلاح، HOME مؤقت جديد، شبكة فعلية، Claude Code 2.1.218):**
+
+- `claude plugin list --json`: الثلاثة (`ponytail-curated`, `obsidian-curated`, `mcp-server-dev-curated`) مثبّتة بحقل `user` scope، **بلا** حقل `errors`.
+- `claude plugin details mcp-server-dev-curated@skill-master-plugins`:
+  ```
+  Component inventory
+    Skills (3)  build-mcp-app, build-mcp-server, build-mcpb
+    Agents (0)
+    Hooks (0)
+    MCP servers (0)
+    LSP servers (0)
+  ```
+- `installed_plugins.json` يسجّل `"gitCommitSha": "66799ffb4611b7e0c3af391c7569823a4d6b4246"` مطابقًا تمامًا للـSHA المُتحقَّق منه.
+- Skill discovery فعلي عبر `claude -p` (لا cache فقط): طلب "اذكر أسماء كل Skill متاحة متعلقة ببناء MCP" أعاد فعليًا `mcp-server-dev-curated:build-mcp-server`، `mcp-server-dev-curated:build-mcp-app`، `mcp-server-dev-curated:build-mcpb` (مع بادئة المصدر الصحيحة)، بالإضافة إلى `mcp-server-patterns` و`mcp-builder` الموجودين مسبقًا.
+- استدعاء آمن لـ`build-mcp-server` عبر `claude -p` بطلب: *"I want to wrap a cloud REST API as an MCP server. Identify the recommended deployment model and the discovery questions, but do not scaffold code."* — الرد طبّق منهجية السكيل الفعلية حرفيًا (أوصى بـremote streamable-HTTP كنموذج افتراضي، سرد نفس أسئلة الاكتشاف الخمس/الست الموثّقة في `SKILL.md`: نوع الاتصال، المستخدمون، عدد الإجراءات، الحاجة لواجهة/elicitation، نوع المصادقة، تفضيل الإطار)، **بلا أي كتابة أو إنشاء ملفات**.
+- ملفات `references/` قُرئت فعليًا من مجلد الـcache بعد التثبيت الحقيقي (مثال: `references/auth.md` لـ`build-mcp-server` قابل للقراءة ومحتواه سليم) — لا فقدان لأي ملف من الـ16 المذكورة أعلاه.
+- Idempotency: تشغيل ثانٍ للمثبّت الكامل على نفس HOME المؤقت أنتج "تخطي" لكل من marketplace add والثلاثة plugin installs (بلا أي `update` أو تكرار `add`).
+- `settings.json` بعد التثبيتين: بلا `statusLine`، وحقل `hooks` يحتوي `PreToolUse` فقط (بمطابقات `Bash`, `mcp__github__.*`, `Edit`, `Write` — حراسنا الأربعة فقط)، بلا `SessionStart`/`SubagentStart`/`UserPromptSubmit`.
+- تم حذف كلا الـHOME المؤقتين المستخدمين في الاختبار بعد انتهائه؛ لم يُشغَّل المثبّت على HOME الحقيقي في أي لحظة.
