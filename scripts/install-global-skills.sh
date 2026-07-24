@@ -283,6 +283,7 @@ JSON
   "pyright": {
     "command": "$langserver_bin",
     "args": ["--stdio"],
+    "workspaceFolder": "\${CLAUDE_PROJECT_DIR}",
     "extensionToLanguage": {
       ".py": "python",
       ".pyi": "python"

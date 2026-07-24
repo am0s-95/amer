@@ -79,6 +79,20 @@ if [ -f "$LSP_JSON" ]; then
   # 8. args تساوي ["--stdio"]
   check "node -e \"const a=JSON.parse(require('fs').readFileSync('$LSP_JSON','utf8')).pyright.args; process.exit((Array.isArray(a)&&a.length===1&&a[0]==='--stdio')?0:1)\"" "args ليست [\"--stdio\"]"
 
+  # 8.1-8.4. workspaceFolder — اختبار انحدار: يجب أن يبقى موجودًا وحرفيًا ${CLAUDE_PROJECT_DIR}
+  # بلا توسيع من المثبّت (لا HOME، لا PWD، لا مسار مستودع ثابت). Claude Code هو من يوسّعها لاحقًا.
+  workspace_folder="$(jget "$LSP_JSON" pyright workspaceFolder)"
+  # ملاحظة: قيمة workspace_folder نفسها هي النص الحرفي "${CLAUDE_PROJECT_DIR}" — لذا يجب لفّها
+  # بعلامات اقتباس مفردة (') عند بناء عبارة eval كي لا يُعاد توسيعها كمتغيّر بيئة فعلي تحت set -u.
+  # 8.1. الحقل موجود (يفشل هذا الفحص إذا حُذف workspaceFolder مستقبلًا)
+  check "[ -n '$workspace_folder' ]" "workspaceFolder غير موجود في تعريف pyright — لا بد أن يبقى \${CLAUDE_PROJECT_DIR} حرفيًا"
+  # 8.2. القيمة تساوي حرفيًا \${CLAUDE_PROJECT_DIR} بدون أي توسيع
+  check "[ '$workspace_folder' = '\${CLAUDE_PROJECT_DIR}' ]" "workspaceFolder ليست \${CLAUDE_PROJECT_DIR} حرفيًا (وجد: $workspace_folder)"
+  # 8.3. المثبّت لم يحوّلها إلى HOME المؤقت
+  check "[ '$workspace_folder' != '$TMP' ]" "workspaceFolder تحوّلت إلى HOME بدل البقاء \${CLAUDE_PROJECT_DIR} حرفيًا"
+  # 8.4. المثبّت لم يحوّلها إلى مسار مستودع أو PWD ثابت
+  check "[ '$workspace_folder' != '$REPO' ] && [ '$workspace_folder' != '$(pwd)' ]" "workspaceFolder تحوّلت إلى مسار مستودع/PWD ثابت بدل البقاء \${CLAUDE_PROJECT_DIR} حرفيًا"
+
   # 9. امتدادا .py و.pyi مربوطان بـpython
   check "[ \"$(jget "$LSP_JSON" pyright extensionToLanguage .py)\" = \"python\" ]" "extensionToLanguage[.py] ليست python"
   check "[ \"$(jget "$LSP_JSON" pyright extensionToLanguage .pyi)\" = \"python\" ]" "extensionToLanguage[.pyi] ليست python"
@@ -123,6 +137,10 @@ check "node -e \"JSON.parse(require('fs').readFileSync('$LSP_JSON','utf8'))\" >/
 check "[ -d \"$PLUGIN_DIR\" ]" "Plugin directory اختفى بعد التشغيل الثاني"
 n_plugin_dirs="$(find "$TMP/.claude/skills" -maxdepth 1 -iname 'pyright-lsp-global*' | wc -l | tr -d ' ')"
 check "[ \"$n_plugin_dirs\" = \"1\" ]" "تكرّر Plugin directory بدل التحديث في مكانه (وجد: $n_plugin_dirs)"
+
+# workspaceFolder يبقى حرفيًا \${CLAUDE_PROJECT_DIR} بعد التشغيل الثاني أيضًا (idempotency)
+workspace_folder_2="$(jget "$LSP_JSON" pyright workspaceFolder)"
+check "[ '$workspace_folder_2' = '\${CLAUDE_PROJECT_DIR}' ]" "workspaceFolder تغيّرت بعد التشغيل الثاني (وجد: $workspace_folder_2)"
 
 # --- 18. TypeScript LSP يبقى موجودًا وسليمًا بعد إضافة Pyright ---
 check "[ -d \"$TS_RUNTIME_DIR\" ]" "Runtime الخاص بـ TypeScript LSP اختفى: $TS_RUNTIME_DIR"
