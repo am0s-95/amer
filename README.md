@@ -10,18 +10,20 @@
 ./scripts/install-global-skills.sh --copy     # نسخ بدل الروابط
 ```
 
-المثبّت idempotent ويقوم بثلاثة أشياء:
+المثبّت idempotent ويقوم بأربعة أشياء:
 
-1. **السكيلات**: symlinks من `.claude/skills/*` إلى `~/.claude/skills/`.
+1. **السكيلات**: symlinks من `.claude/skills/*` إلى `~/.claude/skills/` (111 سكيل).
 2. **الحُرّاس**: ينسخ `guard-dangerous.js` و`suggest-compact.js` (وتبعياته) إلى `~/.claude/hooks/`، ويسجّلهما في `~/.claude/settings.json` — `guard-dangerous` على `Bash`، و`suggest-compact` على `Edit` و`Write` (دمج آمن — لا يستبدل الملف).
 3. **التوجيه التلقائي**: يزامن البلوك المُدار `automatic-skill-routing` (من `.claude/templates/`) داخل `~/.claude/CLAUDE.md` — يحدّث ما بين العلامتين فقط ولا يمس نص المستخدم.
+4. **Global TypeScript LSP plugin**: يثبّت plugin شخصي عالمي (skills-directory plugin بلا `SKILL.md` — لا يُحتسب ضمن الـ111 سكيل) في `~/.claude/skills/typescript-lsp-global`، مع runtime ثابت في `~/.local/share/typescript-lsp` يحتوي نسخًا مثبّتة بدقة: `typescript-language-server@5.3.0` و`typescript@5.7.2`. يعمل عالميًا في كل المشاريع تلقائيًا؛ إن كان للمشروع نسخة TypeScript محلية داخل `node_modules` فهي تُستخدم أولًا، والنسخة العالمية (5.7.2) تعمل كـ fallback فقط. تثبيت dependencies الخاصة بكل مشروع يبقى مسؤولية المشروع نفسه — هذا الـplugin لا يثبّت أو يستبدل شيئًا داخل مشاريعك. `npm install` يُشغَّل فقط عند أول تركيب أو عند تغيّر النسخ المطلوبة، ويمكن تخطيه بمتغيّر البيئة `TS_LSP_SKIP_INSTALL=1`.
 
 ## الاختبارات
 
 ```bash
-bash tests/test-install-global-skills.sh   # المثبّت: التركيب، --prune، الـidempotency، البلوك المُدار
-bash tests/test-guard-dangerous.sh         # الحارس: خطرة مباشرة/مغلّفة، آمنة، fail-safe
-bash tests/test-project-skill-routing.sh   # توجيه السكيلات على مستوى المشروع + ميزانية القائمة
+bash tests/test-install-global-skills.sh    # المثبّت: التركيب، --prune، الـidempotency، البلوك المُدار
+bash tests/test-guard-dangerous.sh          # الحارس: خطرة مباشرة/مغلّفة، آمنة، fail-safe
+bash tests/test-project-skill-routing.sh    # توجيه السكيلات على مستوى المشروع + ميزانية القائمة
+bash tests/test-install-typescript-lsp.sh   # Global TypeScript LSP: التركيب، المسارات المطلقة، الـidempotency (npm وهمي — بلا شبكة)
 ```
 
 ## السحابة مقابل التثبيت العالمي
@@ -37,4 +39,4 @@ bash tests/test-project-skill-routing.sh   # توجيه السكيلات على 
   ```bash
   ./scripts/install-global-skills.sh
   ```
-  لتركيب السكيلات والحارس وبلوك التوجيه عالميًا في `~/.claude`. هذا التثبيت العالمي **لا ينتقل تلقائيًا** من بيئة سحابية إلى جهاز آخر أو العكس — كل بيئة تُركَّب فيها بشكل مستقل عند الحاجة.
+  لتركيب السكيلات والحارس وبلوك التوجيه وGlobal TypeScript LSP plugin عالميًا في `~/.claude`. هذا التثبيت العالمي **لا ينتقل تلقائيًا** من بيئة سحابية إلى جهاز آخر أو العكس — كل بيئة تُركَّب فيها بشكل مستقل عند الحاجة.
