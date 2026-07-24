@@ -1,0 +1,11 @@
+{
+  "name": "session-report-curated",
+  "displayName": "Session Report Curated",
+  "version": "1.0.0-skill-master.1",
+  "description": "Generate privacy-conscious HTML reports of local Claude Code session usage",
+  "author": {
+    "name": "Anthropic / Skill Master curated"
+  },
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/am0s-95/amer/tree/master/.claude/plugins/session-report-curated"
+}

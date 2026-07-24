@@ -36,6 +36,7 @@ export PYRIGHT_LSP_SKIP_INSTALL=1   # هذا الاختبار لا يغطي LSP 
 export PONYTAIL_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Ponytail — انظر test-install-ponytail-curated.sh
 export OBSIDIAN_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Obsidian — انظر test-install-obsidian-curated.sh
 export MCP_SERVER_DEV_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي MCP Server Dev — انظر test-install-mcp-server-dev-curated.sh
+export SESSION_REPORT_CURATED_SKIP_INSTALL=1   # هذا الاختبار لا يغطي Session Report — انظر test-install-session-report-curated.sh
 DEST="$TMP/.claude/skills"
 
 # --- 1. التركيب الأولي ---

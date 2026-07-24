@@ -602,3 +602,94 @@ install_mcp_server_dev_curated_plugin() {
 if [ "${MCP_SERVER_DEV_CURATED_SKIP_INSTALL:-0}" != "1" ]; then
   install_mcp_server_dev_curated_plugin
 fi
+
+# تركيب "Session Report Curated" عالميًا: نفس Marketplace المحلي (skill-master-plugins) يعرض
+# سكيل واحدة فقط (session-report) — نسخة منقّحة محليًا من session-report الرسمي
+# (anthropics/claude-plugins-official، plugins/session-report). التعديلات المحلية: إضافة
+# .claude-plugin/plugin.json (المصدر الرسمي يفتقده، ما قد يسبب namespace مكررًا باسم Git SHA)،
+# وإصلاح analyze-sessions.mjs ليحترم $CLAUDE_CONFIG_DIR بدل تثبيت المسار على ~/.claude/projects،
+# وإخفاء نص البرومبتات والسياق افتراضيًا (redacted) إلا بطلب صريح عبر --include-prompts، وإخراج
+# التقرير افتراضيًا إلى ~/.claude/reports بدل تلويث مستودع العمل. لا Hooks، لا statusLine، لا
+# agents، لا MCP servers، لا LSP servers — ولا تُثبَّت السكيل الرسمي غير المنقّح
+# (session-report@claude-plugins-official) هنا إطلاقًا ولا عبر أي مسار آخر في هذا السكربت.
+# لا تُنشئ أي تقرير ولا تقرأ transcripts أثناء الـbootstrap. راجع
+# .claude/marketplaces/skill-master-plugins و PROVENANCE.md.
+# SESSION_REPORT_CURATED_SKIP_INSTALL=1 لتخطي هذا الجزء بالكامل (تستخدمه اختبارات لا تحتاج شبكة/claude CLI).
+install_session_report_curated_plugin() {
+  local marketplace_dir="$REPO_DIR/.claude/marketplaces/skill-master-plugins"
+  local marketplace_json="$marketplace_dir/.claude-plugin/marketplace.json"
+  local marketplace_name="skill-master-plugins"
+  local plugin_id="session-report-curated@skill-master-plugins"
+
+  if [ ! -f "$marketplace_json" ]; then
+    echo "خطأ: marketplace.json غير موجود: $marketplace_json" >&2
+    return 1
+  fi
+
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "Session Report Curated: تخطي — claude CLI غير موجود في PATH"
+    return 0
+  fi
+
+  local desired_version
+  desired_version="$(node -e "
+    const mp = require('$marketplace_json');
+    const p = mp.plugins.find(p => p.name === 'session-report-curated');
+    console.log(p.version);
+  ")"
+
+  # 1) Marketplace: أضِفه فقط إن لم يكن مسجّلًا بنفس المسار (idempotent، لا يحذف Marketplaces أخرى)
+  local mp_list mp_state
+  mp_list="$(claude plugin marketplace list --json 2>/dev/null || echo '[]')"
+  mp_state="$(node -e '
+    const list=JSON.parse(process.argv[1]||"[]");
+    const found=list.find(m=>m.name===process.argv[2]);
+    if(!found) console.log("missing");
+    else if(found.path===process.argv[3]) console.log("current");
+    else console.log("stale");
+  ' "$mp_list" "$marketplace_name" "$marketplace_dir")"
+
+  case "$mp_state" in
+    missing)
+      echo "Session Report Curated: تسجيل Marketplace محلي ($marketplace_name) ..."
+      claude plugin marketplace add "$marketplace_dir"
+      ;;
+    stale)
+      echo "Session Report Curated: Marketplace مسجّل بمسار مختلف — إعادة تسجيله على مسار هذا المستودع ..."
+      claude plugin marketplace remove "$marketplace_name" || true
+      claude plugin marketplace add "$marketplace_dir"
+      ;;
+    current)
+      echo "Session Report Curated: Marketplace ($marketplace_name) مسجّل مسبقًا بنفس المصدر — تخطي"
+      ;;
+  esac
+
+  # 2) Plugin: ثبّته أو حدّثه فقط عند الحاجة (idempotent، لا يحذف Plugins أخرى)
+  local pl_list pl_state
+  pl_list="$(claude plugin list --json 2>/dev/null || echo '[]')"
+  pl_state="$(node -e '
+    const list=JSON.parse(process.argv[1]||"[]");
+    const found=list.find(p=>p.id===process.argv[2]);
+    if(!found) console.log("missing");
+    else if(found.version===process.argv[3]) console.log("current");
+    else console.log("outdated");
+  ' "$pl_list" "$plugin_id" "$desired_version")"
+
+  case "$pl_state" in
+    missing)
+      echo "Session Report Curated: تثبيت $plugin_id (user scope) ..."
+      claude plugin install "$plugin_id" --scope user
+      ;;
+    outdated)
+      echo "Session Report Curated: تحديث $plugin_id إلى $desired_version ..."
+      claude plugin update "$plugin_id" --scope user
+      ;;
+    current)
+      echo "Session Report Curated: $plugin_id مثبّت مسبقًا على النسخة المعتمدة ($desired_version) — تخطي"
+      ;;
+  esac
+}
+
+if [ "${SESSION_REPORT_CURATED_SKIP_INSTALL:-0}" != "1" ]; then
+  install_session_report_curated_plugin
+fi
